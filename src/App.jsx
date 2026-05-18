@@ -200,6 +200,11 @@ export default function App() {
     reset()
   }
 
+  const clearAllEvents = () => {
+    if (!confirm('Clear every calendar event? This wipes the homeschool template and any events you added. This cannot be undone.')) return
+    update(s => { s.events = [] })
+  }
+
   const openNewEvent = (dateKey) => {
     setEventInitial({
       title: '',
@@ -620,6 +625,7 @@ export default function App() {
         onClose={() => setSettingsOpen(false)}
         onResetDay={clearToday}
         onResetAll={fullReset}
+        onClearEvents={clearAllEvents}
         onManageSync={() => { setSettingsOpen(false); setSyncSetupOpen(true) }}
         onDisconnectSync={disconnectSync}
         onAddChild={addChild}

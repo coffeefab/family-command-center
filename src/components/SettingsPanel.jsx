@@ -105,6 +105,7 @@ export default function SettingsPanel({
   onChange,
   onResetDay,
   onResetAll,
+  onClearEvents,
   onManageSync,
   onDisconnectSync,
   onAddChild,
@@ -252,6 +253,12 @@ export default function SettingsPanel({
                 className="rounded-xl bg-white border border-line px-3 py-2 text-sm hover:bg-sand"
               >
                 Clear today's checkmarks
+              </button>
+              <button
+                onClick={onClearEvents}
+                className="rounded-xl bg-white border border-line px-3 py-2 text-sm hover:bg-sand"
+              >
+                Clear all calendar events
               </button>
               <button
                 onClick={onResetAll}
