@@ -266,7 +266,7 @@ export default function App() {
         />
 
         {/* Today's family schedule strip */}
-        <section className="relative z-10 px-6 md:px-10 pb-10 max-w-3xl mx-auto -mt-2">
+        <section className="relative z-10 px-6 md:px-10 pt-10 md:pt-14 pb-12 max-w-3xl mx-auto">
           <TodaySchedule
             events={state.events}
             children={state.children}
