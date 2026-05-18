@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { eventsForDate, formatTime, eventCategoryMeta } from '../utils/events.js'
+import { eventsForDate, formatTime, eventCategoryMeta, rangeInfo } from '../utils/events.js'
 import { todayKey } from '../utils/date.js'
 
 const DOW_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -268,6 +268,7 @@ export default function FamilyCalendar({
                   const forKids = ev.childIds?.length > 0
                     ? children.filter(c => ev.childIds.includes(c.id)).map(c => c.name).join(', ')
                     : null
+                  const ri = rangeInfo(ev, selectedDay)
                   const Tag = adminMode ? 'button' : 'div'
                   return (
                     <li key={ev.id}>
@@ -282,11 +283,19 @@ export default function FamilyCalendar({
                         </div>
                         <span className={`w-2.5 h-2.5 rounded-full ${m.accent} shrink-0`} />
                         <div className="flex-1 min-w-0">
-                          <div className="text-ink font-semibold truncate">{ev.title}</div>
+                          <div className="flex items-center gap-2 min-w-0">
+                            <span className="text-ink font-semibold truncate">{ev.title}</span>
+                            {ri && (
+                              <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full ${m.text} border ${m.border} bg-white shrink-0`}>
+                                {ri.isFirst ? 'Starts today' : ri.isLast ? 'Last day' : `Day ${ri.dayNum} of ${ri.total}`}
+                              </span>
+                            )}
+                          </div>
                           <div className="text-xs text-muted truncate">
                             <span className={m.text}>{m.label}</span>
                             {forKids ? ` · ${forKids}` : ' · Whole family'}
                             {ev.repeat === 'weekly' ? ' · weekly' : ''}
+                            {ev.repeat === 'range' ? ` · ${ev.startDate} to ${ev.endDate}` : ''}
                             {ev.notes ? ` · ${ev.notes}` : ''}
                           </div>
                         </div>

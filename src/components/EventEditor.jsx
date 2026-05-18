@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
-import { eventCategoryMeta } from '../utils/events.js'
+import { eventCategoryMeta, addDaysKey } from '../utils/events.js'
+import { todayKey } from '../utils/date.js'
 
 const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -9,6 +10,8 @@ const empty = {
   repeat: 'weekly',
   daysOfWeek: [1, 2, 3, 4, 5],
   date: null,
+  startDate: null,
+  endDate: null,
   time: '09:00',
   allDay: false,
   notes: '',
@@ -36,9 +39,31 @@ export default function EventEditor({ open, initial, children, onClose, onSave, 
     form.childIds.includes(id) ? form.childIds.filter(c => c !== id) : [...form.childIds, id]
   )
 
+  const setRepeat = (r) => {
+    setForm(prev => {
+      const next = { ...prev, repeat: r }
+      if (r === 'range') {
+        const start = prev.startDate || todayKey()
+        next.startDate = start
+        next.endDate = prev.endDate || addDaysKey(start, 6)
+        next.allDay = true
+        if (!prev.category || prev.category === 'homeschool') next.category = 'family'
+      }
+      return next
+    })
+  }
+
   const canSave = form.title.trim() && (
-    form.repeat === 'none' ? !!form.date : (form.daysOfWeek?.length > 0)
+    form.repeat === 'weekly' ? (form.daysOfWeek?.length > 0) :
+    form.repeat === 'range'  ? !!(form.startDate && form.endDate && form.endDate >= form.startDate) :
+    !!form.date
   )
+
+  const rangeDays = (form.repeat === 'range' && form.startDate && form.endDate && form.endDate >= form.startDate)
+    ? Math.round(
+        (new Date(form.endDate + 'T00:00:00') - new Date(form.startDate + 'T00:00:00')) / 86400000
+      ) + 1
+    : 0
 
   return (
     <div className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm flex items-end md:items-center justify-center p-3">
@@ -83,25 +108,34 @@ export default function EventEditor({ open, initial, children, onClose, onSave, 
 
           <div>
             <div className="text-xs uppercase tracking-wider text-muted mb-1">Repeats</div>
-            <div className="grid grid-cols-2 gap-2">
-              {['weekly', 'none'].map(r => (
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { k: 'weekly', label: 'Every week' },
+                { k: 'none',   label: 'One day' },
+                { k: 'range',  label: 'Date range' }
+              ].map(({ k, label }) => (
                 <button
-                  key={r}
+                  key={k}
                   type="button"
-                  onClick={() => set('repeat', r)}
+                  onClick={() => setRepeat(k)}
                   className={`rounded-xl border px-3 py-2 text-sm ${
-                    form.repeat === r
+                    form.repeat === k
                       ? 'bg-ink text-cream border-ink'
                       : 'bg-white text-ink border-line hover:bg-sand'
                   }`}
                 >
-                  {r === 'weekly' ? 'Every week' : 'One day only'}
+                  {label}
                 </button>
               ))}
             </div>
+            <p className="text-xs text-muted mt-1.5">
+              {form.repeat === 'weekly' && 'Repeats on the days you pick below.'}
+              {form.repeat === 'none' && 'Appears once on a specific date.'}
+              {form.repeat === 'range' && 'Spans every day from start to end. Great for vacations and trips.'}
+            </p>
           </div>
 
-          {form.repeat === 'weekly' ? (
+          {form.repeat === 'weekly' && (
             <div>
               <div className="text-xs uppercase tracking-wider text-muted mb-1">Days of the week</div>
               <div className="flex flex-wrap gap-1.5">
@@ -124,7 +158,9 @@ export default function EventEditor({ open, initial, children, onClose, onSave, 
                 })}
               </div>
             </div>
-          ) : (
+          )}
+
+          {form.repeat === 'none' && (
             <label className="block">
               <div className="text-xs uppercase tracking-wider text-muted mb-1">Date</div>
               <input
@@ -134,6 +170,40 @@ export default function EventEditor({ open, initial, children, onClose, onSave, 
                 className="w-full rounded-xl border border-line bg-white px-3 py-2"
               />
             </label>
+          )}
+
+          {form.repeat === 'range' && (
+            <div className="space-y-2">
+              <div className="grid grid-cols-2 gap-3">
+                <label className="block">
+                  <div className="text-xs uppercase tracking-wider text-muted mb-1">Start</div>
+                  <input
+                    type="date"
+                    value={form.startDate || ''}
+                    onChange={e => set('startDate', e.target.value || null)}
+                    className="w-full rounded-xl border border-line bg-white px-3 py-2"
+                  />
+                </label>
+                <label className="block">
+                  <div className="text-xs uppercase tracking-wider text-muted mb-1">End</div>
+                  <input
+                    type="date"
+                    value={form.endDate || ''}
+                    min={form.startDate || ''}
+                    onChange={e => set('endDate', e.target.value || null)}
+                    className="w-full rounded-xl border border-line bg-white px-3 py-2"
+                  />
+                </label>
+              </div>
+              {rangeDays > 0 && (
+                <div className="text-xs text-muted">
+                  Spans {rangeDays} {rangeDays === 1 ? 'day' : 'days'}.
+                </div>
+              )}
+              {form.startDate && form.endDate && form.endDate < form.startDate && (
+                <div className="text-xs text-coral-700">End date must be on or after the start date.</div>
+              )}
+            </div>
           )}
 
           <div className="grid grid-cols-2 gap-3">

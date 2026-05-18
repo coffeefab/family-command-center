@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { eventsForDate, formatTime, eventCategoryMeta } from '../utils/events.js'
+import { eventsForDate, formatTime, eventCategoryMeta, rangeInfo } from '../utils/events.js'
 import { todayKey } from '../utils/date.js'
 
 export default function TodaySchedule({
@@ -39,6 +39,7 @@ export default function TodaySchedule({
             const forKids = ev.childIds?.length > 0
               ? children.filter(c => ev.childIds.includes(c.id))
               : null
+            const ri = rangeInfo(ev, today)
             return (
               <li
                 key={ev.id}
@@ -51,7 +52,14 @@ export default function TodaySchedule({
                 </div>
                 <span className={`w-2.5 h-2.5 rounded-full ${m.accent} shrink-0`} />
                 <div className="flex-1 min-w-0">
-                  <div className="text-ink font-semibold truncate">{ev.title}</div>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="text-ink font-semibold truncate">{ev.title}</span>
+                    {ri && (
+                      <span className={`text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded-full ${m.chip || m.soft} ${m.text} border ${m.border} shrink-0`}>
+                        Day {ri.dayNum} of {ri.total}
+                      </span>
+                    )}
+                  </div>
                   <div className="text-xs text-muted truncate">
                     <span className={m.text}>{m.label}</span>
                     {forKids ? ` · ${forKids.map(c => c.name).join(', ')}` : ' · Whole family'}

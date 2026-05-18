@@ -6,12 +6,40 @@ export const eventCategoryMeta = {
 }
 
 export function eventOnDate(event, dateKey) {
-  const d = new Date(dateKey + 'T00:00:00')
-  const dow = d.getDay() // 0=Sun .. 6=Sat
   if (event.repeat === 'weekly') {
-    return (event.daysOfWeek || []).includes(dow)
+    const d = new Date(dateKey + 'T00:00:00')
+    return (event.daysOfWeek || []).includes(d.getDay())
+  }
+  if (event.repeat === 'range') {
+    if (!event.startDate || !event.endDate) return false
+    return dateKey >= event.startDate && dateKey <= event.endDate
   }
   return event.date === dateKey
+}
+
+export function rangeInfo(event, dateKey) {
+  if (event.repeat !== 'range' || !event.startDate || !event.endDate) return null
+  const start = new Date(event.startDate + 'T00:00:00')
+  const end   = new Date(event.endDate   + 'T00:00:00')
+  const cur   = new Date(dateKey         + 'T00:00:00')
+  const total  = Math.round((end - start) / 86400000) + 1
+  const dayNum = Math.round((cur - start) / 86400000) + 1
+  return {
+    dayNum,
+    total,
+    isFirst: dayNum === 1,
+    isLast: dayNum === total,
+    rangeLabel: `${event.startDate} to ${event.endDate}`
+  }
+}
+
+export function addDaysKey(dateKey, n) {
+  const d = new Date(dateKey + 'T00:00:00')
+  d.setDate(d.getDate() + n)
+  const y = d.getFullYear()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${y}-${m}-${day}`
 }
 
 export function eventsForDate(events, dateKey, childId = null) {
