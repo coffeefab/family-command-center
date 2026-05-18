@@ -136,13 +136,18 @@ export default function SettingsPanel({
 
   return (
     <div className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm flex items-end md:items-center justify-center p-3">
-      <div className="w-full max-w-lg rounded-card bg-cream border border-line shadow-card p-5">
-        <div className="flex items-center justify-between mb-3">
+      <div className="w-full max-w-lg max-h-[90vh] rounded-card bg-cream border border-line shadow-card flex flex-col overflow-hidden">
+        <div className="flex items-center justify-between px-5 pt-5 pb-3 border-b border-line/70 bg-cream sticky top-0 z-10 shrink-0">
           <h3 className="font-display text-2xl text-ink">Settings</h3>
-          <button onClick={onClose} className="text-muted hover:text-ink">Close</button>
+          <button
+            onClick={onClose}
+            className="rounded-full border border-line bg-white px-4 py-1.5 text-sm text-ink hover:bg-sand"
+          >
+            Close
+          </button>
         </div>
 
-        <div className="space-y-4">
+        <div className="space-y-4 overflow-y-auto px-5 py-4">
           <div>
             <div className="text-xs uppercase tracking-wider text-muted mb-1.5">Children</div>
             <ChildrenSection
