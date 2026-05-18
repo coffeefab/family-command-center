@@ -8,13 +8,29 @@ export const eventCategoryMeta = {
 export function eventOnDate(event, dateKey) {
   if (event.repeat === 'weekly') {
     const d = new Date(dateKey + 'T00:00:00')
-    return (event.daysOfWeek || []).includes(d.getDay())
+    if (!(event.daysOfWeek || []).includes(d.getDay())) return false
+    // Optional window. When set, the weekly recurrence is clipped to it.
+    if (event.startDate && dateKey < event.startDate) return false
+    if (event.endDate   && dateKey > event.endDate)   return false
+    return true
   }
   if (event.repeat === 'range') {
     if (!event.startDate || !event.endDate) return false
     return dateKey >= event.startDate && dateKey <= event.endDate
   }
   return event.date === dateKey
+}
+
+// Compact human label for a recurring weekly event's window.
+// Examples: "weekly", "weekly from Jun 1", "weekly until Jul 31",
+// "weekly Jun 1 to Jul 31".
+export function weeklyWindowLabel(event) {
+  if (event.repeat !== 'weekly') return ''
+  const fmt = (k) => new Date(k + 'T00:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+  if (event.startDate && event.endDate) return `weekly ${fmt(event.startDate)} to ${fmt(event.endDate)}`
+  if (event.startDate) return `weekly from ${fmt(event.startDate)}`
+  if (event.endDate)   return `weekly until ${fmt(event.endDate)}`
+  return 'weekly'
 }
 
 export function rangeInfo(event, dateKey) {

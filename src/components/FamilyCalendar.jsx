@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { eventsForDate, formatTime, eventCategoryMeta, rangeInfo } from '../utils/events.js'
+import { eventsForDate, formatTime, eventCategoryMeta, rangeInfo, weeklyWindowLabel } from '../utils/events.js'
 import { todayKey } from '../utils/date.js'
 
 const DOW_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
@@ -294,7 +294,7 @@ export default function FamilyCalendar({
                           <div className="text-xs text-muted truncate">
                             <span className={m.text}>{m.label}</span>
                             {forKids ? ` · ${forKids}` : ' · Whole family'}
-                            {ev.repeat === 'weekly' ? ' · weekly' : ''}
+                            {ev.repeat === 'weekly' ? ` · ${weeklyWindowLabel(ev)}` : ''}
                             {ev.repeat === 'range' ? ` · ${ev.startDate} to ${ev.endDate}` : ''}
                             {ev.notes ? ` · ${ev.notes}` : ''}
                           </div>

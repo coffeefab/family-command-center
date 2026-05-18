@@ -53,8 +53,10 @@ export default function EventEditor({ open, initial, children, onClose, onSave, 
     })
   }
 
+  const weeklyWindowValid = !form.startDate || !form.endDate || form.endDate >= form.startDate
+
   const canSave = form.title.trim() && (
-    form.repeat === 'weekly' ? (form.daysOfWeek?.length > 0) :
+    form.repeat === 'weekly' ? ((form.daysOfWeek?.length > 0) && weeklyWindowValid) :
     form.repeat === 'range'  ? !!(form.startDate && form.endDate && form.endDate >= form.startDate) :
     !!form.date
   )
@@ -136,28 +138,72 @@ export default function EventEditor({ open, initial, children, onClose, onSave, 
           </div>
 
           {form.repeat === 'weekly' && (
-            <div>
-              <div className="text-xs uppercase tracking-wider text-muted mb-1">Days of the week</div>
-              <div className="flex flex-wrap gap-1.5">
-                {DAY_LABELS.map((lbl, idx) => {
-                  const active = form.daysOfWeek.includes(idx)
-                  return (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => toggleDay(idx)}
-                      className={`text-xs px-3 py-1.5 rounded-full border ${
-                        active
-                          ? 'bg-ink text-cream border-ink'
-                          : 'bg-white text-ink border-line hover:bg-sand'
-                      }`}
-                    >
-                      {lbl}
-                    </button>
-                  )
-                })}
+            <>
+              <div>
+                <div className="text-xs uppercase tracking-wider text-muted mb-1">Days of the week</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {DAY_LABELS.map((lbl, idx) => {
+                    const active = form.daysOfWeek.includes(idx)
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => toggleDay(idx)}
+                        className={`text-xs px-3 py-1.5 rounded-full border ${
+                          active
+                            ? 'bg-ink text-cream border-ink'
+                            : 'bg-white text-ink border-line hover:bg-sand'
+                        }`}
+                      >
+                        {lbl}
+                      </button>
+                    )
+                  })}
+                </div>
               </div>
-            </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <div className="text-xs uppercase tracking-wider text-muted">Optional window</div>
+                  {(form.startDate || form.endDate) && (
+                    <button
+                      type="button"
+                      onClick={() => setForm(prev => ({ ...prev, startDate: null, endDate: null }))}
+                      className="text-xs text-muted hover:text-ink"
+                    >
+                      Clear window
+                    </button>
+                  )}
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="block">
+                    <div className="text-[11px] text-muted mb-1">From</div>
+                    <input
+                      type="date"
+                      value={form.startDate || ''}
+                      onChange={e => set('startDate', e.target.value || null)}
+                      className="w-full rounded-xl border border-line bg-white px-3 py-2"
+                    />
+                  </label>
+                  <label className="block">
+                    <div className="text-[11px] text-muted mb-1">Until</div>
+                    <input
+                      type="date"
+                      value={form.endDate || ''}
+                      min={form.startDate || ''}
+                      onChange={e => set('endDate', e.target.value || null)}
+                      className="w-full rounded-xl border border-line bg-white px-3 py-2"
+                    />
+                  </label>
+                </div>
+                <p className="text-xs text-muted mt-1.5">
+                  Leave blank to repeat forever. Use this for a summer schedule, a class block, or any limited stretch.
+                </p>
+                {!weeklyWindowValid && (
+                  <div className="text-xs text-coral-700 mt-1">Until date must be on or after From date.</div>
+                )}
+              </div>
+            </>
           )}
 
           {form.repeat === 'none' && (

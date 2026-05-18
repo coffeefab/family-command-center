@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { eventsForDate, formatTime, eventCategoryMeta, rangeInfo, upcomingDays, dayLabel } from '../utils/events.js'
+import { eventsForDate, formatTime, eventCategoryMeta, rangeInfo, weeklyWindowLabel, upcomingDays, dayLabel } from '../utils/events.js'
 import { todayKey } from '../utils/date.js'
 
 export default function CalendarPanel({
@@ -95,7 +95,7 @@ export default function CalendarPanel({
                             <div className="text-xs text-muted truncate">
                               <span className={m.text}>{m.label}</span>
                               {forKids ? ` · ${forKids}` : ' · Whole family'}
-                              {ev.repeat === 'weekly' ? ' · weekly' : ''}
+                              {ev.repeat === 'weekly' ? ` · ${weeklyWindowLabel(ev)}` : ''}
                               {ev.repeat === 'range' ? ` · ${ev.startDate} to ${ev.endDate}` : ''}
                             </div>
                           </div>
