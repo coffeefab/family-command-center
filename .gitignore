@@ -1,0 +1,12 @@
+node_modules
+dist
+.DS_Store
+.env
+.env.local
+*.log
+
+# Personal kid photos. Drop new ones in public/ locally, do not commit.
+public/dana.*
+public/matteo.*
+public/camila.*
+public/cami.*

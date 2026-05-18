@@ -1,0 +1,398 @@
+import { useCallback, useMemo, useState } from 'react'
+import { useStore } from './state/store.js'
+import { todayKey, weekKey, weekDates } from './utils/date.js'
+import { useIdleTimeout } from './utils/useIdle.js'
+import { palette } from './utils/palette.js'
+import Header from './components/Header.jsx'
+import ChildCard from './components/ChildCard.jsx'
+import Reminders from './components/Reminders.jsx'
+import RewardsRail from './components/RewardsRail.jsx'
+import TaskEditor from './components/TaskEditor.jsx'
+import SettingsPanel from './components/SettingsPanel.jsx'
+import PinModal from './components/PinModal.jsx'
+import HomeLobby from './components/HomeLobby.jsx'
+import WeeklySummary from './components/WeeklySummary.jsx'
+import WeeklyHistory from './components/WeeklyHistory.jsx'
+
+const IDLE_SECONDS = 60
+
+export default function App() {
+  const { state, update, reset } = useStore()
+  const dKey = todayKey()
+  const wKey = weekKey()
+
+  // view: { kind: 'lobby' } | { kind: 'kid', id } | { kind: 'parent' }
+  const [view, setView] = useState({ kind: 'lobby' })
+  const [pinOpen, setPinOpen] = useState(false)
+  const [settingsOpen, setSettingsOpen] = useState(false)
+  const [editorOpen, setEditorOpen] = useState(false)
+  const [editorInitial, setEditorInitial] = useState(null)
+  const [welcomeFor, setWelcomeFor] = useState(null)
+
+  const adminMode = view.kind === 'parent'
+  const anyModalOpen = pinOpen || settingsOpen || editorOpen
+
+  // ----- Idle timeout: only resets to lobby from kid view -----
+  const handleIdle = useCallback(() => {
+    if (view.kind === 'kid' && !anyModalOpen) {
+      setView({ kind: 'lobby' })
+      setWelcomeFor(null)
+    }
+  }, [view.kind, anyModalOpen])
+
+  useIdleTimeout({
+    seconds: IDLE_SECONDS,
+    onIdle: handleIdle,
+    paused: view.kind !== 'kid' || anyModalOpen
+  })
+
+  // ----- Star totals -----
+  const starsByChild = useMemo(() => {
+    const map = Object.fromEntries(state.children.map(c => [c.id, 0]))
+    const log = state.starLog || {}
+    if (state.settings.starResetMode === 'daily') {
+      const today = log[dKey] || {}
+      for (const cid of Object.keys(map)) map[cid] = today[cid] || 0
+    } else {
+      for (const date of Object.keys(log)) {
+        if (weekKey(new Date(date + 'T00:00:00')) === wKey) {
+          const day = log[date]
+          for (const cid of Object.keys(day)) map[cid] = (map[cid] || 0) + day[cid]
+        }
+      }
+    }
+    return map
+  }, [state.starLog, state.settings.starResetMode, state.children, dKey, wKey])
+
+  const doneByChild = useMemo(() => {
+    const map = Object.fromEntries(state.children.map(c => [c.id, 0]))
+    for (const t of state.tasks) {
+      if (t.dueToday && t.completedBy?.[dKey]) map[t.childId] = (map[t.childId] || 0) + 1
+    }
+    return map
+  }, [state.tasks, state.children, dKey])
+
+  const totalByChild = useMemo(() => {
+    const map = Object.fromEntries(state.children.map(c => [c.id, 0]))
+    for (const t of state.tasks) {
+      if (t.dueToday) map[t.childId] = (map[t.childId] || 0) + 1
+    }
+    return map
+  }, [state.tasks, state.children, dKey])
+
+  // ----- Mutations -----
+  const toggleTask = (taskId) => {
+    update(s => {
+      const t = s.tasks.find(x => x.id === taskId)
+      if (!t) return
+      t.completedBy = t.completedBy || {}
+      const wasDone = !!t.completedBy[dKey]
+      if (wasDone) {
+        delete t.completedBy[dKey]
+        s.starLog[dKey] = s.starLog[dKey] || {}
+        s.starLog[dKey][t.childId] = Math.max(0, (s.starLog[dKey][t.childId] || 0) - (t.stars || 0))
+      } else {
+        t.completedBy[dKey] = true
+        s.starLog[dKey] = s.starLog[dKey] || {}
+        s.starLog[dKey][t.childId] = (s.starLog[dKey][t.childId] || 0) + (t.stars || 0)
+      }
+    })
+  }
+
+  const openAddTask = (defaultCategory, childId) => {
+    setEditorInitial({
+      title: '',
+      category: defaultCategory || 'chore',
+      childId: childId || state.children[0]?.id,
+      stars: 1,
+      notes: '',
+      dueToday: true
+    })
+    setEditorOpen(true)
+  }
+
+  const openEditTask = (task) => {
+    setEditorInitial(task)
+    setEditorOpen(true)
+  }
+
+  const saveTask = (form) => {
+    update(s => {
+      if (form.id) {
+        const idx = s.tasks.findIndex(t => t.id === form.id)
+        if (idx >= 0) s.tasks[idx] = { ...s.tasks[idx], ...form }
+      } else {
+        s.tasks.push({ id: `t${Date.now()}`, completedBy: {}, ...form })
+      }
+    })
+    setEditorOpen(false)
+    setEditorInitial(null)
+  }
+
+  const deleteTask = (id) => {
+    if (!confirm('Delete this task?')) return
+    update(s => { s.tasks = s.tasks.filter(t => t.id !== id) })
+  }
+
+  const addReminder = (text) => update(s => {
+    s.reminders.push({ id: `rem${Date.now()}`, text })
+  })
+  const deleteReminder = (id) => update(s => {
+    s.reminders = s.reminders.filter(r => r.id !== id)
+  })
+
+  const addReward = ({ label, cost }) => update(s => {
+    s.rewards.push({ id: `rw${Date.now()}`, label, cost })
+  })
+  const deleteReward = (id) => update(s => {
+    s.rewards = s.rewards.filter(r => r.id !== id)
+  })
+
+  const changeSettings = (next) => update(s => { s.settings = next })
+
+  const clearToday = () => {
+    if (!confirm("Clear today's checkmarks and stars?")) return
+    update(s => {
+      for (const t of s.tasks) {
+        if (t.completedBy && t.completedBy[dKey]) delete t.completedBy[dKey]
+      }
+      if (s.starLog && s.starLog[dKey]) delete s.starLog[dKey]
+    })
+  }
+
+  const fullReset = () => {
+    if (!confirm('Reset everything to defaults? This cannot be undone.')) return
+    reset()
+  }
+
+  const toggleRedemption = (wKey, childId, rewardId) => update(s => {
+    s.redemptions = s.redemptions || {}
+    s.redemptions[wKey] = s.redemptions[wKey] || {}
+    s.redemptions[wKey][childId] = s.redemptions[wKey][childId] || []
+    const arr = s.redemptions[wKey][childId]
+    const idx = arr.indexOf(rewardId)
+    if (idx >= 0) arr.splice(idx, 1)
+    else arr.push(rewardId)
+  })
+
+  const resetThisWeek = () => {
+    if (!confirm("Reset this week's stars? Daily checkmarks stay, only star totals for Monday through Sunday are cleared.")) return
+    const keys = weekDates().map(d => d.key)
+    update(s => {
+      for (const k of keys) {
+        if (s.starLog && s.starLog[k]) delete s.starLog[k]
+      }
+    })
+  }
+
+  // ----- Navigation -----
+  const pickKid = (id) => {
+    setView({ kind: 'kid', id })
+    setWelcomeFor(id)
+    setTimeout(() => setWelcomeFor(null), 2200)
+  }
+
+  const goLobby = () => {
+    setView({ kind: 'lobby' })
+    setWelcomeFor(null)
+  }
+
+  const requestParent = () => setPinOpen(true)
+  const exitParent = () => setView({ kind: 'lobby' })
+
+  // ===== RENDER =====
+  if (view.kind === 'lobby') {
+    return (
+      <div className="paper relative min-h-screen">
+        <HomeLobby
+          children={state.children}
+          starsByChild={starsByChild}
+          doneByChild={doneByChild}
+          totalByChild={totalByChild}
+          reset={state.settings.starResetMode}
+          onPick={pickKid}
+          onParent={requestParent}
+        />
+        <PinModal
+          open={pinOpen}
+          expectedPin={state.settings.adminPin}
+          onCancel={() => setPinOpen(false)}
+          onSuccess={() => { setPinOpen(false); setView({ kind: 'parent' }) }}
+        />
+      </div>
+    )
+  }
+
+  if (view.kind === 'kid') {
+    const child = state.children.find(c => c.id === view.id)
+    if (!child) { setView({ kind: 'lobby' }); return null }
+    const p = palette[child.color] || palette.coral
+
+    return (
+      <div className="paper relative min-h-screen">
+        {/* Top nav */}
+        <div className="relative z-10 flex items-center justify-between px-6 md:px-10 pt-6">
+          <button
+            onClick={goLobby}
+            className="rounded-full border border-line bg-cream px-4 py-2 text-sm text-ink hover:bg-sand tap"
+          >
+            ← Back to home
+          </button>
+          <div className="text-xs uppercase tracking-[0.22em] text-muted">
+            Returns home in 1 minute of quiet
+          </div>
+        </div>
+
+        {/* Welcome banner */}
+        {welcomeFor === child.id && (
+          <div className="relative z-10 px-6 md:px-10 pt-4">
+            <div className={`slide-in inline-flex items-center gap-3 rounded-full ${p.soft} border ${p.border} px-4 py-2 shadow-card`}>
+              <span className={`w-2.5 h-2.5 rounded-full ${p.dot}`} />
+              <span className={`font-display text-lg ${p.text}`}>Hi {child.name}!</span>
+              <span className="text-muted text-sm">Let's see your day.</span>
+            </div>
+          </div>
+        )}
+
+        {/* Focused kid card */}
+        <main className="relative z-10 px-6 md:px-10 pt-6 pb-4 max-w-3xl mx-auto">
+          <ChildCard
+            child={child}
+            tasks={state.tasks}
+            dateKey={dKey}
+            starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
+            starsThisPeriod={starsByChild[child.id]}
+            reset={state.settings.starResetMode}
+            rewards={state.rewards}
+            adminMode={false}
+            onToggleTask={toggleTask}
+            onEditTask={() => {}}
+            onDeleteTask={() => {}}
+            onAddTask={() => {}}
+          />
+        </main>
+
+        {/* Reminders */}
+        <section className="relative z-10 px-6 md:px-10 pb-10 max-w-3xl mx-auto">
+          <Reminders
+            reminders={state.reminders}
+            adminMode={false}
+            onAdd={() => {}}
+            onDelete={() => {}}
+          />
+        </section>
+      </div>
+    )
+  }
+
+  // PARENT VIEW
+  const totalDoneToday = state.tasks.filter(t => t.dueToday && t.completedBy?.[dKey]).length
+  const totalDueToday = state.tasks.filter(t => t.dueToday).length
+
+  return (
+    <div className="paper relative min-h-screen">
+      <Header
+        adminMode={adminMode}
+        onToggleAdmin={exitParent}
+        onOpenSettings={() => setSettingsOpen(true)}
+      />
+
+      <div className="relative z-10 px-6 md:px-10 pb-6 space-y-5">
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-white/70 backdrop-blur-sm px-5 py-3 shadow-card">
+          <div className="text-sm text-muted">
+            <span className="font-semibold text-ink">{totalDoneToday}</span> of{' '}
+            <span className="font-semibold text-ink">{totalDueToday}</span> tasks done today
+          </div>
+          <div className="text-sm text-muted">
+            Tracking mode:{' '}
+            <span className="font-semibold text-ink">
+              {state.settings.starResetMode === 'daily' ? 'Daily reset' : 'Weekly roll up'}
+            </span>
+          </div>
+        </div>
+
+        <WeeklySummary
+          children={state.children}
+          tasks={state.tasks}
+          starLog={state.starLog}
+          rewards={state.rewards}
+          redemptions={state.redemptions}
+          onToggleRedemption={toggleRedemption}
+          onResetWeek={resetThisWeek}
+        />
+
+        <WeeklyHistory
+          children={state.children}
+          starLog={state.starLog}
+          rewards={state.rewards}
+          redemptions={state.redemptions}
+          onToggleRedemption={toggleRedemption}
+        />
+      </div>
+
+      <main className="relative z-10 px-6 md:px-10 pb-6 grid gap-5 grid-cols-1 lg:grid-cols-3">
+        {state.children.map(child => (
+          <ChildCard
+            key={child.id}
+            child={child}
+            tasks={state.tasks}
+            dateKey={dKey}
+            starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
+            starsThisPeriod={starsByChild[child.id]}
+            reset={state.settings.starResetMode}
+            rewards={state.rewards}
+            adminMode={true}
+            onToggleTask={toggleTask}
+            onEditTask={openEditTask}
+            onDeleteTask={deleteTask}
+            onAddTask={(cat) => openAddTask(cat, child.id)}
+          />
+        ))}
+      </main>
+
+      <section className="relative z-10 px-6 md:px-10 pb-6 grid gap-5 grid-cols-1 md:grid-cols-2">
+        <Reminders
+          reminders={state.reminders}
+          adminMode={true}
+          onAdd={addReminder}
+          onDelete={deleteReminder}
+        />
+        <RewardsRail
+          rewards={state.rewards}
+          adminMode={true}
+          onAdd={addReward}
+          onDelete={deleteReward}
+        />
+      </section>
+
+      <button
+        onClick={() => openAddTask('chore', state.children[0]?.id)}
+        className="fixed bottom-6 right-6 z-30 rounded-full bg-ink text-cream px-5 py-3 shadow-card hover:translate-y-[-1px] transition"
+      >
+        + New task
+      </button>
+
+      <footer className="relative z-10 px-6 md:px-10 pb-10 pt-4">
+        <div className="text-xs text-muted text-center">
+          Parent mode. Tap exit to return the kids' home screen.
+        </div>
+      </footer>
+
+      <TaskEditor
+        open={editorOpen}
+        initial={editorInitial}
+        children={state.children}
+        onClose={() => { setEditorOpen(false); setEditorInitial(null) }}
+        onSave={saveTask}
+      />
+      <SettingsPanel
+        open={settingsOpen}
+        settings={state.settings}
+        onClose={() => setSettingsOpen(false)}
+        onChange={changeSettings}
+        onResetDay={clearToday}
+        onResetAll={fullReset}
+      />
+    </div>
+  )
+}

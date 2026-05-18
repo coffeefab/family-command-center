@@ -1,0 +1,81 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+html, body, #root { height: 100%; }
+
+body {
+  background:
+    radial-gradient(1100px 600px at 12% -10%, #FFEAC9 0%, transparent 60%),
+    radial-gradient(900px 500px at 100% 10%, #F6E4E0 0%, transparent 55%),
+    #FBF6EC;
+  color: #2B2620;
+  font-family: 'Nunito', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+.font-display { font-family: 'Fraunces', Georgia, serif; letter-spacing: -0.01em; }
+
+/* Paper texture overlay */
+.paper::before {
+  content: "";
+  position: fixed; inset: 0; pointer-events: none; z-index: 0;
+  background-image: radial-gradient(rgba(43,38,32,0.06) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.4;
+  mix-blend-mode: multiply;
+}
+
+/* Big tap targets for kid mode */
+.tap { min-height: 56px; }
+
+/* Subtle pop on completed tasks */
+@keyframes pop {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+.pop { animation: pop 220ms ease-out; }
+
+/* Confetti dot */
+@keyframes float-up {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  100% { transform: translateY(-60px) rotate(120deg); opacity: 0; }
+}
+.confetti-dot { animation: float-up 700ms ease-out forwards; }
+
+/* Smooth focus */
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: 2px solid #2B2620;
+  outline-offset: 2px;
+  border-radius: 8px;
+}
+
+/* Gentle bob for avatars */
+@keyframes bob {
+  0%, 100% { transform: translateY(0) rotate(var(--rot, 0deg)); }
+  50%      { transform: translateY(-8px) rotate(var(--rot, 0deg)); }
+}
+.bob { animation: bob 4.5s ease-in-out infinite; display: inline-block; }
+
+/* Pop entrance for lobby tiles and prompt swaps */
+@keyframes enter-pop {
+  from { transform: scale(0.6) translateY(12px); opacity: 0; }
+  to   { transform: scale(1)   translateY(0);    opacity: 1; }
+}
+.enter-pop { animation: enter-pop 600ms cubic-bezier(0.34, 1.56, 0.64, 1) backwards; }
+
+/* Floating background orbs */
+@keyframes float-orb {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%      { transform: translate(14px, -22px) scale(1.06); }
+  66%      { transform: translate(-10px, 14px) scale(0.96); }
+}
+.float-orb { animation: float-orb 9s ease-in-out infinite; }
+
+/* Welcome banner slide */
+@keyframes slide-in {
+  from { transform: translateY(-12px); opacity: 0; }
+  to   { transform: translateY(0);     opacity: 1; }
+}
+.slide-in { animation: slide-in 380ms ease-out backwards; }
