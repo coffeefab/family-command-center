@@ -68,7 +68,7 @@ export default function HomeLobby({
       {/* Top bar with brand and date */}
       <div className="relative z-10 flex items-center justify-between px-6 md:px-10 pt-6">
         <div className="text-xs md:text-sm uppercase tracking-[0.22em] text-muted">
-          Espinoza Family Command Center
+          Castelan Family Command Center
         </div>
         <div className="text-xs md:text-sm text-muted hidden sm:block">
           {prettyDate()}

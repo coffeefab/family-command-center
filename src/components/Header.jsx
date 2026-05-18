@@ -5,7 +5,7 @@ export default function Header({ adminMode, onToggleAdmin, onOpenSettings }) {
     <header className="relative z-10 flex flex-wrap items-end justify-between gap-4 px-6 pt-8 pb-4 md:px-10 md:pt-10">
       <div>
         <div className="text-muted text-sm uppercase tracking-[0.18em]">
-          Espinoza Family
+          Castelan Family
         </div>
         <h1 className="font-display text-4xl md:text-5xl text-ink mt-1">
           {greeting()}, family.

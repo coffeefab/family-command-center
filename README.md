@@ -1,4 +1,4 @@
-# Espinoza Family Command Center
+# Castelan Family Command Center
 
 A warm, kid friendly dashboard for daily chores, homeschool tasks, family reminders, and star rewards. Built as a lightweight React + Vite + Tailwind app that runs in any browser and stores everything in localStorage. No backend, no accounts, no paid services.
 
