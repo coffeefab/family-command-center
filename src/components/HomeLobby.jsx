@@ -92,7 +92,16 @@ export default function HomeLobby({
         </p>
 
         {/* Avatar tiles */}
-        <div className="mt-10 md:mt-14 grid grid-cols-1 sm:grid-cols-3 gap-6 md:gap-10 w-full max-w-4xl">
+        {children.length === 0 ? (
+          <div className="mt-10 text-center text-muted">
+            <p>No children added yet.</p>
+            <p className="text-sm mt-1">Open parent mode to add the first one.</p>
+          </div>
+        ) : (
+        <div
+          className="mt-10 md:mt-14 grid gap-6 md:gap-10 w-full max-w-4xl"
+          style={{ gridTemplateColumns: `repeat(auto-fit, minmax(${children.length > 3 ? 200 : 220}px, 1fr))` }}
+        >
           {children.map((child, i) => {
             const p = palette[child.color] || palette.coral
             const stars = starsByChild[child.id] || 0
@@ -181,6 +190,7 @@ export default function HomeLobby({
             )
           })}
         </div>
+        )}
       </div>
 
       {/* Family calendar CTA */}

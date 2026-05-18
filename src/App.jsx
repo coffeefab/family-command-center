@@ -251,6 +251,43 @@ export default function App() {
     else arr.push(rewardId)
   })
 
+  const addChild = ({ name, color }) => update(s => {
+    const id = `c${Date.now()}`
+    s.children = s.children || []
+    s.children.push({ id, name, color, photo: null })
+  })
+
+  const updateChild = (id, updates) => update(s => {
+    const idx = (s.children || []).findIndex(c => c.id === id)
+    if (idx >= 0) s.children[idx] = { ...s.children[idx], ...updates }
+  })
+
+  const removeChild = (id) => {
+    const target = state.children.find(c => c.id === id)
+    if (!target) return
+    if (!confirm(`Remove ${target.name}? Their tasks, stars, and rewards history will be removed too.`)) return
+    update(s => {
+      s.children = (s.children || []).filter(c => c.id !== id)
+      s.tasks    = (s.tasks    || []).filter(t => t.childId !== id)
+      if (s.starLog) {
+        for (const date of Object.keys(s.starLog)) {
+          if (s.starLog[date] && s.starLog[date][id] !== undefined) delete s.starLog[date][id]
+        }
+      }
+      if (s.redemptions) {
+        for (const week of Object.keys(s.redemptions)) {
+          if (s.redemptions[week] && s.redemptions[week][id]) delete s.redemptions[week][id]
+        }
+      }
+      if (s.events) {
+        s.events = s.events.map(e => ({
+          ...e,
+          childIds: (e.childIds || []).filter(cid => cid !== id)
+        }))
+      }
+    })
+  }
+
   const resetThisWeek = () => {
     if (!confirm("Reset this week's stars? Daily checkmarks stay, only star totals for Monday through Sunday are cleared.")) return
     const keys = weekDates().map(d => d.key)
@@ -510,7 +547,15 @@ export default function App() {
         />
       </div>
 
-      <main className="relative z-10 px-6 md:px-10 pb-6 grid gap-5 grid-cols-1 lg:grid-cols-3">
+      <main
+        className="relative z-10 px-6 md:px-10 pb-6 grid gap-5"
+        style={{ gridTemplateColumns: `repeat(auto-fit, minmax(320px, 1fr))` }}
+      >
+        {state.children.length === 0 ? (
+          <div className="rounded-card border border-dashed border-line bg-white/60 p-6 text-center text-muted">
+            No children yet. Open Settings to add the first one.
+          </div>
+        ) : null}
         {state.children.map(child => (
           <ChildCard
             key={child.id}
@@ -568,6 +613,7 @@ export default function App() {
       <SettingsPanel
         open={settingsOpen}
         settings={state.settings}
+        children={state.children}
         familyCode={familyCode}
         syncStatus={syncStatus}
         onChange={changeSettings}
@@ -576,6 +622,9 @@ export default function App() {
         onResetAll={fullReset}
         onManageSync={() => { setSettingsOpen(false); setSyncSetupOpen(true) }}
         onDisconnectSync={disconnectSync}
+        onAddChild={addChild}
+        onUpdateChild={updateChild}
+        onRemoveChild={removeChild}
       />
       <SyncSetup
         open={syncSetupOpen}
