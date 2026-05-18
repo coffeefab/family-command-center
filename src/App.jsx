@@ -18,13 +18,40 @@ import TodaySchedule from './components/TodaySchedule.jsx'
 import CalendarPanel from './components/CalendarPanel.jsx'
 import EventEditor from './components/EventEditor.jsx'
 import FamilyCalendar from './components/FamilyCalendar.jsx'
+import SyncSetup from './components/SyncSetup.jsx'
+import { useFamilySync } from './state/useFamilySync.js'
+import { getStoredFamilyCode, setStoredFamilyCode, clearStoredFamilyCode } from './lib/supabase.js'
 
 const IDLE_SECONDS = 60
 
 export default function App() {
-  const { state, update, reset } = useStore()
+  const { state, setState, update, reset } = useStore()
   const dKey = todayKey()
   const wKey = weekKey()
+
+  const [familyCode, setFamilyCode] = useState(() => getStoredFamilyCode())
+  const [syncSetupOpen, setSyncSetupOpen] = useState(() => !getStoredFamilyCode())
+  const [syncStatus, setSyncStatus] = useState('idle')
+
+  useFamilySync({
+    familyCode,
+    state,
+    setState,
+    onStatus: setSyncStatus
+  })
+
+  const handleSyncComplete = ({ code, replaceState }) => {
+    setStoredFamilyCode(code)
+    if (replaceState) setState(replaceState)
+    setFamilyCode(code)
+    setSyncSetupOpen(false)
+  }
+
+  const disconnectSync = () => {
+    if (!confirm('Stop syncing with other devices? Your data will stay on this device but will not update from or push to other devices.')) return
+    clearStoredFamilyCode()
+    setFamilyCode(null)
+  }
 
   // view: { kind: 'lobby' } | { kind: 'kid', id } | { kind: 'parent' }
   const [view, setView] = useState({ kind: 'lobby' })
@@ -38,7 +65,7 @@ export default function App() {
   const [celebratingFor, setCelebratingFor] = useState(null)
 
   const adminMode = view.kind === 'parent'
-  const anyModalOpen = pinOpen || settingsOpen || editorOpen || eventEditorOpen || !!celebratingFor
+  const anyModalOpen = pinOpen || settingsOpen || editorOpen || eventEditorOpen || syncSetupOpen || !!celebratingFor
 
   // ----- Idle timeout: resets to lobby from kid view or calendar -----
   const handleIdle = useCallback(() => {
@@ -280,6 +307,11 @@ export default function App() {
           expectedPin={state.settings.adminPin}
           onCancel={() => setPinOpen(false)}
           onSuccess={() => { setPinOpen(false); setView({ kind: 'parent' }) }}
+        />
+        <SyncSetup
+          open={syncSetupOpen}
+          onComplete={handleSyncComplete}
+          onSkip={() => setSyncSetupOpen(false)}
         />
       </div>
     )
@@ -536,10 +568,19 @@ export default function App() {
       <SettingsPanel
         open={settingsOpen}
         settings={state.settings}
-        onClose={() => setSettingsOpen(false)}
+        familyCode={familyCode}
+        syncStatus={syncStatus}
         onChange={changeSettings}
+        onClose={() => setSettingsOpen(false)}
         onResetDay={clearToday}
         onResetAll={fullReset}
+        onManageSync={() => { setSettingsOpen(false); setSyncSetupOpen(true) }}
+        onDisconnectSync={disconnectSync}
+      />
+      <SyncSetup
+        open={syncSetupOpen}
+        onComplete={handleSyncComplete}
+        onSkip={() => setSyncSetupOpen(false)}
       />
       <EventEditor
         open={eventEditorOpen}
