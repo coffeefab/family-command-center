@@ -17,6 +17,7 @@ import CelebrationOverlay from './components/CelebrationOverlay.jsx'
 import TodaySchedule from './components/TodaySchedule.jsx'
 import CalendarPanel from './components/CalendarPanel.jsx'
 import EventEditor from './components/EventEditor.jsx'
+import FamilyCalendar from './components/FamilyCalendar.jsx'
 
 const IDLE_SECONDS = 60
 
@@ -39,9 +40,9 @@ export default function App() {
   const adminMode = view.kind === 'parent'
   const anyModalOpen = pinOpen || settingsOpen || editorOpen || eventEditorOpen || !!celebratingFor
 
-  // ----- Idle timeout: only resets to lobby from kid view -----
+  // ----- Idle timeout: resets to lobby from kid view or calendar -----
   const handleIdle = useCallback(() => {
-    if (view.kind === 'kid' && !anyModalOpen) {
+    if ((view.kind === 'kid' || view.kind === 'calendar') && !anyModalOpen) {
       setView({ kind: 'lobby' })
       setWelcomeFor(null)
     }
@@ -50,7 +51,7 @@ export default function App() {
   useIdleTimeout({
     seconds: IDLE_SECONDS,
     onIdle: handleIdle,
-    paused: view.kind !== 'kid' || anyModalOpen
+    paused: (view.kind !== 'kid' && view.kind !== 'calendar') || anyModalOpen
   })
 
   // ----- Star totals -----
@@ -247,6 +248,7 @@ export default function App() {
 
   const requestParent = () => setPinOpen(true)
   const exitParent = () => setView({ kind: 'lobby' })
+  const openCalendar = () => setView({ kind: 'calendar' })
 
   // ===== RENDER =====
   if (view.kind === 'lobby') {
@@ -260,6 +262,7 @@ export default function App() {
           reset={state.settings.starResetMode}
           onPick={pickKid}
           onParent={requestParent}
+          onOpenCalendar={openCalendar}
         />
 
         {/* Today's family schedule strip */}
@@ -272,6 +275,28 @@ export default function App() {
           />
         </section>
 
+        <PinModal
+          open={pinOpen}
+          expectedPin={state.settings.adminPin}
+          onCancel={() => setPinOpen(false)}
+          onSuccess={() => { setPinOpen(false); setView({ kind: 'parent' }) }}
+        />
+      </div>
+    )
+  }
+
+  if (view.kind === 'calendar') {
+    return (
+      <div className="paper relative min-h-screen">
+        <FamilyCalendar
+          events={state.events}
+          children={state.children}
+          adminMode={false}
+          onAdd={() => {}}
+          onEdit={() => {}}
+          onBack={goLobby}
+          onParent={requestParent}
+        />
         <PinModal
           open={pinOpen}
           expectedPin={state.settings.adminPin}

@@ -20,7 +20,8 @@ export default function HomeLobby({
   totalByChild,
   reset,
   onPick,
-  onParent
+  onParent,
+  onOpenCalendar
 }) {
   const [promptIdx, setPromptIdx] = useState(0)
   const [pressedId, setPressedId] = useState(null)
@@ -182,8 +183,24 @@ export default function HomeLobby({
         </div>
       </div>
 
+      {/* Family calendar CTA */}
+      <div className="relative z-10 px-6 md:px-10 mt-2 flex justify-center">
+        <button
+          onClick={onOpenCalendar}
+          className="rounded-full bg-white border border-line shadow-card px-6 py-3 text-ink hover:bg-cream tap inline-flex items-center gap-2"
+        >
+          <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <rect x="3" y="4" width="18" height="18" rx="3" />
+            <line x1="16" y1="2" x2="16" y2="6" />
+            <line x1="8" y1="2" x2="8" y2="6" />
+            <line x1="3" y1="10" x2="21" y2="10" />
+          </svg>
+          <span className="font-semibold">Open family calendar</span>
+        </button>
+      </div>
+
       {/* Footer with parent mode */}
-      <div className="relative z-10 px-6 md:px-10 pb-6 flex items-center justify-between">
+      <div className="relative z-10 px-6 md:px-10 pt-4 pb-6 flex items-center justify-between">
         <div className="text-xs text-muted">
           Returns home after a minute of quiet.
         </div>
