@@ -13,6 +13,7 @@ import PinModal from './components/PinModal.jsx'
 import HomeLobby from './components/HomeLobby.jsx'
 import WeeklySummary from './components/WeeklySummary.jsx'
 import WeeklyHistory from './components/WeeklyHistory.jsx'
+import CelebrationOverlay from './components/CelebrationOverlay.jsx'
 
 const IDLE_SECONDS = 60
 
@@ -28,9 +29,10 @@ export default function App() {
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorInitial, setEditorInitial] = useState(null)
   const [welcomeFor, setWelcomeFor] = useState(null)
+  const [celebratingFor, setCelebratingFor] = useState(null)
 
   const adminMode = view.kind === 'parent'
-  const anyModalOpen = pinOpen || settingsOpen || editorOpen
+  const anyModalOpen = pinOpen || settingsOpen || editorOpen || !!celebratingFor
 
   // ----- Idle timeout: only resets to lobby from kid view -----
   const handleIdle = useCallback(() => {
@@ -228,6 +230,23 @@ export default function App() {
     if (!child) { setView({ kind: 'lobby' }); return null }
     const p = palette[child.color] || palette.coral
 
+    const myTasksToday = state.tasks.filter(t => t.childId === child.id && t.dueToday)
+    const myDoneToday = myTasksToday.filter(t => t.completedBy?.[dKey]).length
+    const myTotalToday = myTasksToday.length
+    const myStarsToday = (state.starLog?.[dKey]?.[child.id]) || 0
+    const myStarsPeriod = starsByChild[child.id] || 0
+    const allDone = myTotalToday > 0 && myDoneToday === myTotalToday
+
+    const handleDone = () => {
+      setCelebratingFor(child.id)
+    }
+
+    const closeCelebration = () => {
+      setCelebratingFor(null)
+      setView({ kind: 'lobby' })
+      setWelcomeFor(null)
+    }
+
     return (
       <div className="paper relative min-h-screen">
         {/* Top nav */}
@@ -273,7 +292,7 @@ export default function App() {
         </main>
 
         {/* Reminders */}
-        <section className="relative z-10 px-6 md:px-10 pb-10 max-w-3xl mx-auto">
+        <section className="relative z-10 px-6 md:px-10 max-w-3xl mx-auto">
           <Reminders
             reminders={state.reminders}
             adminMode={false}
@@ -281,6 +300,35 @@ export default function App() {
             onDelete={() => {}}
           />
         </section>
+
+        {/* Big I'm done button */}
+        <section className="relative z-10 px-6 md:px-10 pt-6 pb-10 max-w-3xl mx-auto">
+          <button
+            onClick={handleDone}
+            className={`w-full tap rounded-card ${p.btn} font-display text-2xl md:text-3xl py-6 shadow-card flex items-center justify-center gap-3 transition active:translate-y-[1px]`}
+            style={{ minHeight: 84 }}
+          >
+            <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="5 12 10 17 19 7" />
+            </svg>
+            <span>{allDone ? "Yay, all done!" : "I'm done!"}</span>
+          </button>
+          <p className="text-xs text-muted text-center mt-2">
+            Your work is saved automatically. Tap this to celebrate and head home.
+          </p>
+        </section>
+
+        {celebratingFor === child.id && (
+          <CelebrationOverlay
+            child={child}
+            starsThisPeriod={myStarsPeriod}
+            starsToday={myStarsToday}
+            doneCount={myDoneToday}
+            totalCount={myTotalToday}
+            reset={state.settings.starResetMode}
+            onClose={closeCelebration}
+          />
+        )}
       </div>
     )
   }
