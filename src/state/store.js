@@ -51,6 +51,20 @@ const defaultRewards = [
   { id: 'r3', label: 'Outing or treat', cost: 30 }
 ]
 
+const WEEKDAYS = [1, 2, 3, 4, 5]
+const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
+
+const defaultEvents = [
+  { id: 'ev1', title: 'Morning circle',       category: 'homeschool', repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '09:00', allDay: false, notes: 'Hello, calendar, weather, song.', childIds: [] },
+  { id: 'ev2', title: 'Math time',            category: 'homeschool', repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '09:30', allDay: false, notes: '', childIds: [] },
+  { id: 'ev3', title: 'Reading hour',         category: 'homeschool', repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '10:30', allDay: false, notes: '', childIds: [] },
+  { id: 'ev4', title: 'Outside play',         category: 'fun',        repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '11:30', allDay: false, notes: '', childIds: [] },
+  { id: 'ev5', title: 'Lunch',                category: 'family',     repeat: 'weekly', daysOfWeek: ALL_DAYS, date: null, time: '12:00', allDay: false, notes: '', childIds: [] },
+  { id: 'ev6', title: 'Quiet time',           category: 'family',     repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '13:00', allDay: false, notes: 'Books, drawing, naps.', childIds: [] },
+  { id: 'ev7', title: 'Art or science',       category: 'homeschool', repeat: 'weekly', daysOfWeek: [1, 3, 5], date: null, time: '14:00', allDay: false, notes: 'Alternates each day.', childIds: [] },
+  { id: 'ev8', title: 'Bible or devotional',  category: 'homeschool', repeat: 'weekly', daysOfWeek: [2, 4], date: null, time: '14:00', allDay: false, notes: '', childIds: [] }
+]
+
 const defaultState = {
   children: defaultChildren,
   tasks: seedTasks(),
@@ -65,7 +79,9 @@ const defaultState = {
   // Stars earned by date and child
   starLog: {}, // { 'YYYY-MM-DD': { childId: number } }
   // Rewards handed out per week per child
-  redemptions: {} // { 'YYYY-Www': { childId: [rewardId, ...] } }
+  redemptions: {}, // { 'YYYY-Www': { childId: [rewardId, ...] } }
+  // Calendar events. Single dated or weekly recurring.
+  events: defaultEvents
 }
 
 // ---------- Hook ----------
@@ -85,6 +101,9 @@ export function useStore() {
       }))
       // Migration: ensure redemptions map exists.
       merged.redemptions = merged.redemptions || {}
+      // Migration: ensure events array exists. Seed with defaults the first
+      // time a previously saved state opens after upgrade.
+      if (!Array.isArray(merged.events)) merged.events = defaultEvents
       return merged
     } catch {
       return defaultState

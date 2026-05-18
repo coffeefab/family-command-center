@@ -14,6 +14,9 @@ import HomeLobby from './components/HomeLobby.jsx'
 import WeeklySummary from './components/WeeklySummary.jsx'
 import WeeklyHistory from './components/WeeklyHistory.jsx'
 import CelebrationOverlay from './components/CelebrationOverlay.jsx'
+import TodaySchedule from './components/TodaySchedule.jsx'
+import CalendarPanel from './components/CalendarPanel.jsx'
+import EventEditor from './components/EventEditor.jsx'
 
 const IDLE_SECONDS = 60
 
@@ -28,11 +31,13 @@ export default function App() {
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
   const [editorInitial, setEditorInitial] = useState(null)
+  const [eventEditorOpen, setEventEditorOpen] = useState(false)
+  const [eventInitial, setEventInitial] = useState(null)
   const [welcomeFor, setWelcomeFor] = useState(null)
   const [celebratingFor, setCelebratingFor] = useState(null)
 
   const adminMode = view.kind === 'parent'
-  const anyModalOpen = pinOpen || settingsOpen || editorOpen || !!celebratingFor
+  const anyModalOpen = pinOpen || settingsOpen || editorOpen || eventEditorOpen || !!celebratingFor
 
   // ----- Idle timeout: only resets to lobby from kid view -----
   const handleIdle = useCallback(() => {
@@ -167,6 +172,47 @@ export default function App() {
     reset()
   }
 
+  const openNewEvent = (dateKey) => {
+    setEventInitial({
+      title: '',
+      category: 'homeschool',
+      repeat: 'weekly',
+      daysOfWeek: [1, 2, 3, 4, 5],
+      date: dateKey || null,
+      time: '09:00',
+      allDay: false,
+      notes: '',
+      childIds: []
+    })
+    setEventEditorOpen(true)
+  }
+
+  const openEditEvent = (ev) => {
+    setEventInitial(ev)
+    setEventEditorOpen(true)
+  }
+
+  const saveEvent = (form) => {
+    update(s => {
+      s.events = s.events || []
+      if (form.id) {
+        const idx = s.events.findIndex(e => e.id === form.id)
+        if (idx >= 0) s.events[idx] = { ...s.events[idx], ...form }
+      } else {
+        s.events.push({ id: `ev${Date.now()}`, ...form })
+      }
+    })
+    setEventEditorOpen(false)
+    setEventInitial(null)
+  }
+
+  const deleteEvent = (id) => {
+    if (!confirm('Delete this event?')) return
+    update(s => { s.events = (s.events || []).filter(e => e.id !== id) })
+    setEventEditorOpen(false)
+    setEventInitial(null)
+  }
+
   const toggleRedemption = (wKey, childId, rewardId) => update(s => {
     s.redemptions = s.redemptions || {}
     s.redemptions[wKey] = s.redemptions[wKey] || {}
@@ -215,6 +261,17 @@ export default function App() {
           onPick={pickKid}
           onParent={requestParent}
         />
+
+        {/* Today's family schedule strip */}
+        <section className="relative z-10 px-6 md:px-10 pb-10 max-w-3xl mx-auto -mt-2">
+          <TodaySchedule
+            events={state.events}
+            children={state.children}
+            title="Today's family schedule"
+            emptyHint="No events scheduled. Parents can add some in parent mode."
+          />
+        </section>
+
         <PinModal
           open={pinOpen}
           expectedPin={state.settings.adminPin}
@@ -273,8 +330,19 @@ export default function App() {
           </div>
         )}
 
+        {/* Today's schedule for this kid */}
+        <section className="relative z-10 px-6 md:px-10 pt-6 max-w-3xl mx-auto">
+          <TodaySchedule
+            events={state.events}
+            children={state.children}
+            childId={child.id}
+            title={`${child.name}'s day`}
+            emptyHint="No scheduled lessons or activities today."
+          />
+        </section>
+
         {/* Focused kid card */}
-        <main className="relative z-10 px-6 md:px-10 pt-6 pb-4 max-w-3xl mx-auto">
+        <main className="relative z-10 px-6 md:px-10 pt-5 pb-4 max-w-3xl mx-auto">
           <ChildCard
             child={child}
             tasks={state.tasks}
@@ -376,6 +444,13 @@ export default function App() {
           redemptions={state.redemptions}
           onToggleRedemption={toggleRedemption}
         />
+
+        <CalendarPanel
+          events={state.events}
+          children={state.children}
+          onAdd={openNewEvent}
+          onEdit={openEditEvent}
+        />
       </div>
 
       <main className="relative z-10 px-6 md:px-10 pb-6 grid gap-5 grid-cols-1 lg:grid-cols-3">
@@ -440,6 +515,14 @@ export default function App() {
         onChange={changeSettings}
         onResetDay={clearToday}
         onResetAll={fullReset}
+      />
+      <EventEditor
+        open={eventEditorOpen}
+        initial={eventInitial}
+        children={state.children}
+        onClose={() => { setEventEditorOpen(false); setEventInitial(null) }}
+        onSave={saveEvent}
+        onDelete={deleteEvent}
       />
     </div>
   )
