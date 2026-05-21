@@ -256,6 +256,21 @@ export default function App() {
     else arr.push(rewardId)
   })
 
+  const addTaskCategory = ({ label }) => {
+    const trimmed = String(label || '').trim()
+    if (!trimmed) return null
+    const base = trimmed.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '')
+    const existing = new Set((state.taskCategories || []).map(c => c.id))
+    let id = base || `cat${Date.now()}`
+    let n = 2
+    while (existing.has(id)) id = `${base || 'cat'}-${n++}`
+    update(s => {
+      s.taskCategories = s.taskCategories || []
+      s.taskCategories.push({ id, label: trimmed, sectionTitle: trimmed, builtIn: false })
+    })
+    return id
+  }
+
   const addChild = ({ name, color }) => update(s => {
     const id = `c${Date.now()}`
     s.children = s.children || []
@@ -445,6 +460,7 @@ export default function App() {
           <ChildCard
             child={child}
             tasks={state.tasks}
+            categories={state.taskCategories}
             dateKey={dKey}
             starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
             starsThisPeriod={starsByChild[child.id]}
@@ -566,6 +582,7 @@ export default function App() {
             key={child.id}
             child={child}
             tasks={state.tasks}
+            categories={state.taskCategories}
             dateKey={dKey}
             starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
             starsThisPeriod={starsByChild[child.id]}
@@ -612,6 +629,8 @@ export default function App() {
         open={editorOpen}
         initial={editorInitial}
         children={state.children}
+        categories={state.taskCategories}
+        onAddCategory={addTaskCategory}
         onClose={() => { setEditorOpen(false); setEditorInitial(null) }}
         onSave={saveTask}
       />

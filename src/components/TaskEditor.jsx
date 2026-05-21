@@ -9,7 +9,9 @@ const empty = {
   dueToday: true
 }
 
-export default function TaskEditor({ open, initial, children, onClose, onSave }) {
+const ADD_NEW = '__add_new__'
+
+export default function TaskEditor({ open, initial, children, categories, onAddCategory, onClose, onSave }) {
   const [form, setForm] = useState(empty)
 
   useEffect(() => {
@@ -20,6 +22,24 @@ export default function TaskEditor({ open, initial, children, onClose, onSave })
   if (!open) return null
 
   const set = (k, v) => setForm(prev => ({ ...prev, [k]: v }))
+
+  const cats = Array.isArray(categories) && categories.length > 0
+    ? categories
+    : [{ id: 'chore', label: 'Chore' }]
+
+  const handleCategoryChange = (value) => {
+    if (value !== ADD_NEW) {
+      set('category', value)
+      return
+    }
+    const name = window.prompt('Name this category (for example: Practice)')
+    if (name === null) return
+    const trimmed = name.trim()
+    if (!trimmed) return
+    if (typeof onAddCategory !== 'function') return
+    const newId = onAddCategory({ label: trimmed })
+    if (newId) set('category', newId)
+  }
 
   return (
     <div className="fixed inset-0 z-40 bg-ink/30 backdrop-blur-sm flex items-end md:items-center justify-center p-3">
@@ -46,14 +66,17 @@ export default function TaskEditor({ open, initial, children, onClose, onSave })
             <label className="block">
               <div className="text-xs uppercase tracking-wider text-muted mb-1">Category</div>
               <select
-                value={form.category}
-                onChange={e => set('category', e.target.value)}
+                value={cats.some(c => c.id === form.category) ? form.category : ''}
+                onChange={e => handleCategoryChange(e.target.value)}
                 className="w-full rounded-xl border border-line bg-white px-3 py-2"
               >
-                <option value="chore">Chore</option>
-                <option value="homeschool">Homeschool</option>
-                <option value="routine">Routine</option>
-                <option value="reminder">Reminder</option>
+                {!cats.some(c => c.id === form.category) && (
+                  <option value="" disabled>Pick a category</option>
+                )}
+                {cats.map(c => (
+                  <option key={c.id} value={c.id}>{c.label}</option>
+                ))}
+                <option value={ADD_NEW}>+ Add new category…</option>
               </select>
             </label>
 

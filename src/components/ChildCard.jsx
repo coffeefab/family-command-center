@@ -2,15 +2,16 @@ import { useMemo, useState } from 'react'
 import TaskItem from './TaskItem.jsx'
 import { palette } from '../utils/palette.js'
 
-const SECTIONS = [
-  { key: 'chore',      title: 'Chores' },
-  { key: 'homeschool', title: 'Homeschool' },
-  { key: 'routine',    title: 'Daily routine' }
+const FALLBACK_SECTIONS = [
+  { key: 'chore',      title: 'Chores',        label: 'Chores' },
+  { key: 'homeschool', title: 'Homeschool',    label: 'Homeschool' },
+  { key: 'routine',    title: 'Daily routine', label: 'Routine' }
 ]
 
 export default function ChildCard({
   child,
   tasks,
+  categories,
   dateKey,
   starsToday,
   starsThisPeriod,
@@ -24,6 +25,15 @@ export default function ChildCard({
 }) {
   const p = palette[child.color] || palette.coral
   const [filter, setFilter] = useState('all')
+
+  const SECTIONS = useMemo(() => {
+    if (!Array.isArray(categories) || categories.length === 0) return FALLBACK_SECTIONS
+    return categories.map(c => ({
+      key: c.id,
+      title: c.sectionTitle || c.label,
+      label: c.label
+    }))
+  }, [categories])
 
   const myTasks = useMemo(
     () => tasks.filter(t => t.childId === child.id && t.dueToday),
@@ -95,7 +105,7 @@ export default function ChildCard({
 
       {/* Filters */}
       <div className="px-5 pt-4 flex flex-wrap gap-1.5">
-        {['all', 'chore', 'homeschool', 'routine'].map(key => (
+        {[{ key: 'all', label: 'All' }, ...SECTIONS].map(({ key, label }) => (
           <button
             key={key}
             onClick={() => setFilter(key)}
@@ -105,7 +115,7 @@ export default function ChildCard({
                 : 'bg-white text-muted border-line hover:bg-sand'
             }`}
           >
-            {key === 'all' ? 'All' : key === 'chore' ? 'Chores' : key === 'homeschool' ? 'Homeschool' : 'Routine'}
+            {label}
           </button>
         ))}
       </div>
@@ -140,6 +150,7 @@ export default function ChildCard({
                     <TaskItem
                       key={t.id}
                       task={t}
+                      categoryLabel={section.label}
                       childColor={child.color}
                       dateKey={dateKey}
                       adminMode={adminMode}

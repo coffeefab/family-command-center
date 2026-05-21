@@ -54,6 +54,13 @@ const defaultRewards = [
 const WEEKDAYS = [1, 2, 3, 4, 5]
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6]
 
+const defaultTaskCategories = [
+  { id: 'chore',      label: 'Chore',      sectionTitle: 'Chores',        builtIn: true },
+  { id: 'homeschool', label: 'Homeschool', sectionTitle: 'Homeschool',    builtIn: true },
+  { id: 'routine',    label: 'Routine',    sectionTitle: 'Daily routine', builtIn: true },
+  { id: 'reminder',   label: 'Reminder',   sectionTitle: 'Reminders',     builtIn: true }
+]
+
 const defaultEvents = [
   { id: 'ev1', title: 'Morning circle',       category: 'homeschool', repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '09:00', allDay: false, notes: 'Hello, calendar, weather, song.', childIds: [] },
   { id: 'ev2', title: 'Math time',            category: 'homeschool', repeat: 'weekly', daysOfWeek: WEEKDAYS, date: null, time: '09:30', allDay: false, notes: '', childIds: [] },
@@ -81,7 +88,9 @@ const defaultState = {
   // Rewards handed out per week per child
   redemptions: {}, // { 'YYYY-Www': { childId: [rewardId, ...] } }
   // Calendar events. Single dated or weekly recurring.
-  events: defaultEvents
+  events: defaultEvents,
+  // Editable task categories used to label and group daily tasks.
+  taskCategories: defaultTaskCategories
 }
 
 // ---------- Hook ----------
@@ -104,6 +113,11 @@ export function useStore() {
       // Migration: ensure events array exists. Seed with defaults the first
       // time a previously saved state opens after upgrade.
       if (!Array.isArray(merged.events)) merged.events = defaultEvents
+      // Migration: ensure taskCategories exists. Seeds defaults for state
+      // saved before task categories were editable.
+      if (!Array.isArray(merged.taskCategories) || merged.taskCategories.length === 0) {
+        merged.taskCategories = defaultTaskCategories
+      }
       return merged
     } catch {
       return defaultState

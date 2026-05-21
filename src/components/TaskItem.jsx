@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import { categoryMeta, palette } from '../utils/palette.js'
 
-export default function TaskItem({ task, childColor, dateKey, onToggle, onEdit, onDelete, adminMode }) {
+export default function TaskItem({ task, categoryLabel, childColor, dateKey, onToggle, onEdit, onDelete, adminMode }) {
   const done = !!task.completedBy?.[dateKey]
-  const meta = categoryMeta[task.category] || categoryMeta.chore
+  const fallbackLabel = categoryMeta[task.category]?.label || task.category || 'Task'
+  const chipLabel = categoryLabel || fallbackLabel
   const p = palette[childColor] || palette.coral
   const [poof, setPoof] = useState(false)
 
@@ -36,7 +37,7 @@ export default function TaskItem({ task, childColor, dateKey, onToggle, onEdit, 
           {task.title}
         </div>
         <div className="flex items-center gap-2 mt-0.5 text-xs">
-          <span className={`px-2 py-0.5 rounded-full border ${p.chip}`}>{meta.label}</span>
+          <span className={`px-2 py-0.5 rounded-full border ${p.chip}`}>{chipLabel}</span>
           <span className="text-muted">{task.stars} {task.stars === 1 ? 'star' : 'stars'}</span>
           {task.notes ? <span className="text-muted italic truncate">· {task.notes}</span> : null}
         </div>
