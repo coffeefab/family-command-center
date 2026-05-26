@@ -37,6 +37,15 @@ function ChildAvatarPicker({ child, palette: p, onChange }) {
           disabled={busy}
         />
       </label>
+      <span
+        aria-hidden
+        className="absolute -bottom-0.5 -right-0.5 w-4 h-4 rounded-full bg-cream border border-line text-ink flex items-center justify-center shadow-card pointer-events-none"
+      >
+        <svg viewBox="0 0 24 24" className="w-2.5 h-2.5" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M12 20h9" />
+          <path d="M16.5 3.5a2.121 2.121 0 1 1 3 3L7 19l-4 1 1-4 12.5-12.5z" />
+        </svg>
+      </span>
       {child.photo && (
         <button
           type="button"
