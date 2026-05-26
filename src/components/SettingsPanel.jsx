@@ -1,5 +1,55 @@
 import { useState } from 'react'
 import { palette, KID_COLORS } from '../utils/palette.js'
+import { fileToSquareDataURL } from '../utils/image.js'
+
+function ChildAvatarPicker({ child, palette: p, onChange }) {
+  const [busy, setBusy] = useState(false)
+  const handleFile = async (e) => {
+    const file = e.target.files?.[0]
+    e.target.value = ''
+    if (!file) return
+    setBusy(true)
+    try {
+      const dataUrl = await fileToSquareDataURL(file)
+      onChange({ photo: dataUrl })
+    } catch {
+      // fail silently. user can try again.
+    } finally {
+      setBusy(false)
+    }
+  }
+  return (
+    <div className="relative shrink-0">
+      <label
+        className={`relative inline-flex items-center justify-center w-10 h-10 rounded-full overflow-hidden ${p.dot} text-white font-display text-base cursor-pointer ${busy ? 'opacity-60' : ''}`}
+        title="Change photo"
+      >
+        {child.photo ? (
+          <img src={child.photo} alt="" className="w-full h-full object-cover" draggable={false} />
+        ) : (
+          <span>{child.name?.[0] || '?'}</span>
+        )}
+        <input
+          type="file"
+          accept="image/*"
+          className="absolute inset-0 opacity-0 cursor-pointer"
+          onChange={handleFile}
+          disabled={busy}
+        />
+      </label>
+      {child.photo && (
+        <button
+          type="button"
+          onClick={() => onChange({ photo: null })}
+          aria-label="Remove photo"
+          className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-ink text-cream text-[10px] leading-none flex items-center justify-center shadow-card"
+        >
+          ×
+        </button>
+      )}
+    </div>
+  )
+}
 
 function ChildrenSection({ children, onAdd, onUpdate, onRemove }) {
   const [newName, setNewName] = useState('')
@@ -24,9 +74,11 @@ function ChildrenSection({ children, onAdd, onUpdate, onRemove }) {
         return (
           <div key={c.id} className="rounded-xl border border-line bg-white p-3">
             <div className="flex items-center gap-2">
-              <span className={`inline-flex items-center justify-center w-8 h-8 rounded-full ${p.dot} text-white font-display text-base shrink-0`}>
-                {c.name?.[0] || '?'}
-              </span>
+              <ChildAvatarPicker
+                child={c}
+                palette={p}
+                onChange={(updates) => onUpdate(c.id, updates)}
+              />
               <input
                 value={c.name}
                 onChange={e => onUpdate(c.id, { name: e.target.value })}
@@ -40,7 +92,7 @@ function ChildrenSection({ children, onAdd, onUpdate, onRemove }) {
                 Remove
               </button>
             </div>
-            <div className="flex items-center gap-1.5 mt-2 pl-10">
+            <div className="flex items-center gap-1.5 mt-2 pl-12">
               {KID_COLORS.map(color => {
                 const pc = palette[color]
                 const active = c.color === color

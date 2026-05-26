@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { palette } from '../utils/palette.js'
 import { greeting, prettyDate } from '../utils/date.js'
 
-const ASSET = (name) => `${import.meta.env.BASE_URL}${name}`
+const ASSET = (name) => name?.startsWith('data:') ? name : `${import.meta.env.BASE_URL}${name}`
 
 const PROMPTS = [
   "Who's checking in?",

@@ -9,9 +9,6 @@ const defaultChildren = [
   { id: 'camila',  name: 'Camila',  color: 'plum',  photo: null }
 ]
 
-// Drop in photo files at public/<id>.png to enable avatars.
-const PHOTO_MAP = {}
-
 const everyday = [
   { title: 'Make bed',              category: 'chore',     stars: 1 },
   { title: 'Brush teeth',           category: 'routine',   stars: 1 },
@@ -102,12 +99,7 @@ export function useStore() {
       const parsed = JSON.parse(raw)
       // shallow merge to forward-fill new fields
       const merged = { ...defaultState, ...parsed, settings: { ...defaultState.settings, ...(parsed.settings || {}) } }
-      // Always source photo paths from the current PHOTO_MAP so stale
-      // references in stored state never point at missing files.
-      merged.children = (merged.children || defaultChildren).map(c => ({
-        ...c,
-        photo: PHOTO_MAP[c.id] || null
-      }))
+      merged.children = merged.children || defaultChildren
       // Migration: ensure redemptions map exists.
       merged.redemptions = merged.redemptions || {}
       // Migration: ensure events array exists. Seed with defaults the first
