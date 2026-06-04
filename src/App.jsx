@@ -59,6 +59,8 @@ export default function App() {
   // In parent mode, the day whose checkmarks are being edited. Defaults to today,
   // reset each time parent mode is entered. Kids always edit today only.
   const [activeDateKey, setActiveDateKey] = useState(dKey)
+  // Parent mode is split into tabs: tasks | calendar | history.
+  const [parentTab, setParentTab] = useState('tasks')
   const [pinOpen, setPinOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
@@ -335,7 +337,7 @@ export default function App() {
   }
 
   const requestParent = () => setPinOpen(true)
-  const enterParent = () => { setActiveDateKey(dKey); setPinOpen(false); setView({ kind: 'parent' }) }
+  const enterParent = () => { setActiveDateKey(dKey); setParentTab('tasks'); setPinOpen(false); setView({ kind: 'parent' }) }
   const exitParent = () => setView({ kind: 'lobby' })
   const openCalendar = () => setView({ kind: 'calendar' })
 
@@ -551,6 +553,22 @@ export default function App() {
         onOpenSettings={() => setSettingsOpen(true)}
       />
 
+      {/* Parent tab bar */}
+      <div className="relative z-10 px-6 md:px-10 pt-1 pb-4">
+        <div className="inline-flex gap-1 rounded-full border border-line bg-white/70 p-1 shadow-card">
+          {[{ key: 'tasks', label: 'Tasks' }, { key: 'calendar', label: 'Calendar' }, { key: 'history', label: 'History' }].map(t => (
+            <button
+              key={t.key}
+              onClick={() => setParentTab(t.key)}
+              className={`px-5 py-2 rounded-full text-sm font-semibold transition tap ${parentTab === t.key ? 'bg-ink text-cream' : 'text-muted hover:text-ink hover:bg-sand'}`}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {parentTab === 'tasks' && (<>
       <div className="relative z-10 px-6 md:px-10 pb-6 space-y-5">
         {/* Day picker: edit checkmarks for today or any past day */}
         <div className={`rounded-card border shadow-card px-5 py-3 backdrop-blur-sm ${isToday ? 'border-line bg-white/70' : 'border-butter-500 bg-butter-50'}`}>
@@ -618,35 +636,10 @@ export default function App() {
           </div>
         </div>
 
-        <WeeklySummary
-          children={state.children}
-          tasks={state.tasks}
-          starLog={state.starLog}
-          rewards={state.rewards}
-          redemptions={state.redemptions}
-          onToggleRedemption={toggleRedemption}
-          onResetWeek={resetThisWeek}
-        />
-
-        <WeeklyHistory
-          children={state.children}
-          starLog={state.starLog}
-          rewards={state.rewards}
-          redemptions={state.redemptions}
-          onToggleRedemption={toggleRedemption}
-        />
-
-        <CalendarPanel
-          events={state.events}
-          children={state.children}
-          onAdd={openNewEvent}
-          onEdit={openEditEvent}
-        />
       </div>
 
       <main
-        className="relative z-10 px-6 md:px-10 pb-6 grid gap-5"
-        style={{ gridTemplateColumns: `repeat(auto-fit, minmax(320px, 1fr))` }}
+        className="relative z-10 px-6 md:px-10 pb-6 grid gap-4 grid-cols-1 md:grid-cols-3 items-start"
       >
         {state.children.length === 0 ? (
           <div className="rounded-card border border-dashed border-line bg-white/60 p-6 text-center text-muted">
@@ -687,13 +680,49 @@ export default function App() {
           onDelete={deleteReward}
         />
       </section>
+      </>
+      )}
 
+      {parentTab === 'calendar' && (
+        <div className="relative z-10 px-6 md:px-10 pb-6">
+          <CalendarPanel
+            events={state.events}
+            children={state.children}
+            onAdd={openNewEvent}
+            onEdit={openEditEvent}
+          />
+        </div>
+      )}
+
+      {parentTab === 'history' && (
+        <div className="relative z-10 px-6 md:px-10 pb-6 space-y-5">
+          <WeeklySummary
+            children={state.children}
+            tasks={state.tasks}
+            starLog={state.starLog}
+            rewards={state.rewards}
+            redemptions={state.redemptions}
+            onToggleRedemption={toggleRedemption}
+            onResetWeek={resetThisWeek}
+          />
+          <WeeklyHistory
+            children={state.children}
+            starLog={state.starLog}
+            rewards={state.rewards}
+            redemptions={state.redemptions}
+            onToggleRedemption={toggleRedemption}
+          />
+        </div>
+      )}
+
+      {parentTab === 'tasks' && (
       <button
         onClick={() => openAddTask('chore', state.children[0]?.id)}
         className="fixed bottom-6 right-6 z-30 rounded-full bg-ink text-cream px-5 py-3 shadow-card hover:translate-y-[-1px] transition"
       >
         + New task
       </button>
+      )}
 
       <footer className="relative z-10 px-6 md:px-10 pb-10 pt-4">
         <div className="text-xs text-muted text-center">
