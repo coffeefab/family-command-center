@@ -15,6 +15,13 @@ export function weekKey(d = new Date()) {
   return `${date.getUTCFullYear()}-W${String(week).padStart(2, '0')}`;
 }
 
+// Shift a YYYY-MM-DD key by a number of days (negative for past). Returns a new key.
+export function shiftKey(key, deltaDays) {
+  const d = new Date(key + 'T00:00:00')
+  d.setDate(d.getDate() + deltaDays)
+  return todayKey(d)
+}
+
 export function prettyDate(d = new Date()) {
   return d.toLocaleDateString('en-US', {
     weekday: 'long',

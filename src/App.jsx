@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState } from 'react'
 import { useStore } from './state/store.js'
-import { todayKey, weekKey, weekDates } from './utils/date.js'
+import { todayKey, weekKey, weekDates, shiftKey, prettyDate } from './utils/date.js'
 import { useIdleTimeout } from './utils/useIdle.js'
 import { palette } from './utils/palette.js'
 import Header from './components/Header.jsx'
@@ -55,6 +55,9 @@ export default function App() {
 
   // view: { kind: 'lobby' } | { kind: 'kid', id } | { kind: 'parent' }
   const [view, setView] = useState({ kind: 'lobby' })
+  // In parent mode, the day whose checkmarks are being edited. Defaults to today,
+  // reset each time parent mode is entered. Kids always edit today only.
+  const [activeDateKey, setActiveDateKey] = useState(dKey)
   const [pinOpen, setPinOpen] = useState(false)
   const [settingsOpen, setSettingsOpen] = useState(false)
   const [editorOpen, setEditorOpen] = useState(false)
@@ -116,20 +119,20 @@ export default function App() {
   }, [state.tasks, state.children, dKey])
 
   // ----- Mutations -----
-  const toggleTask = (taskId) => {
+  const toggleTask = (taskId, forKey = dKey) => {
     update(s => {
       const t = s.tasks.find(x => x.id === taskId)
       if (!t) return
       t.completedBy = t.completedBy || {}
-      const wasDone = !!t.completedBy[dKey]
+      const wasDone = !!t.completedBy[forKey]
       if (wasDone) {
-        delete t.completedBy[dKey]
-        s.starLog[dKey] = s.starLog[dKey] || {}
-        s.starLog[dKey][t.childId] = Math.max(0, (s.starLog[dKey][t.childId] || 0) - (t.stars || 0))
+        delete t.completedBy[forKey]
+        s.starLog[forKey] = s.starLog[forKey] || {}
+        s.starLog[forKey][t.childId] = Math.max(0, (s.starLog[forKey][t.childId] || 0) - (t.stars || 0))
       } else {
-        t.completedBy[dKey] = true
-        s.starLog[dKey] = s.starLog[dKey] || {}
-        s.starLog[dKey][t.childId] = (s.starLog[dKey][t.childId] || 0) + (t.stars || 0)
+        t.completedBy[forKey] = true
+        s.starLog[forKey] = s.starLog[forKey] || {}
+        s.starLog[forKey][t.childId] = (s.starLog[forKey][t.childId] || 0) + (t.stars || 0)
       }
     })
   }
@@ -331,6 +334,7 @@ export default function App() {
   }
 
   const requestParent = () => setPinOpen(true)
+  const enterParent = () => { setActiveDateKey(dKey); setPinOpen(false); setView({ kind: 'parent' }) }
   const exitParent = () => setView({ kind: 'lobby' })
   const openCalendar = () => setView({ kind: 'calendar' })
 
@@ -363,7 +367,7 @@ export default function App() {
           open={pinOpen}
           expectedPin={state.settings.adminPin}
           onCancel={() => setPinOpen(false)}
-          onSuccess={() => { setPinOpen(false); setView({ kind: 'parent' }) }}
+          onSuccess={enterParent}
         />
         <SyncSetup
           open={syncSetupOpen}
@@ -390,7 +394,7 @@ export default function App() {
           open={pinOpen}
           expectedPin={state.settings.adminPin}
           onCancel={() => setPinOpen(false)}
-          onSuccess={() => { setPinOpen(false); setView({ kind: 'parent' }) }}
+          onSuccess={enterParent}
         />
       </div>
     )
@@ -517,8 +521,16 @@ export default function App() {
   }
 
   // PARENT VIEW
-  const totalDoneToday = state.tasks.filter(t => t.dueToday && t.completedBy?.[dKey]).length
+  const isToday = activeDateKey === dKey
+  const activeDate = new Date(activeDateKey + 'T00:00:00')
+  const activeDoneCount = state.tasks.filter(t => t.dueToday && t.completedBy?.[activeDateKey]).length
   const totalDueToday = state.tasks.filter(t => t.dueToday).length
+  const goToToday = () => setActiveDateKey(dKey)
+  const stepDay = (delta) => {
+    const next = shiftKey(activeDateKey, delta)
+    if (next > dKey) return // never edit a future day
+    setActiveDateKey(next)
+  }
 
   return (
     <div className="paper relative min-h-screen">
@@ -529,11 +541,64 @@ export default function App() {
       />
 
       <div className="relative z-10 px-6 md:px-10 pb-6 space-y-5">
-        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-white/70 backdrop-blur-sm px-5 py-3 shadow-card">
-          <div className="text-sm text-muted">
-            <span className="font-semibold text-ink">{totalDoneToday}</span> of{' '}
-            <span className="font-semibold text-ink">{totalDueToday}</span> tasks done today
+        {/* Day picker: edit checkmarks for today or any past day */}
+        <div className={`rounded-card border shadow-card px-5 py-3 backdrop-blur-sm ${isToday ? 'border-line bg-white/70' : 'border-butter-500 bg-butter-50'}`}>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => stepDay(-1)}
+                aria-label="Previous day"
+                className="w-9 h-9 rounded-full border border-line bg-white text-ink flex items-center justify-center hover:bg-sand tap"
+              >
+                ‹
+              </button>
+              <div className="text-center min-w-[12rem]">
+                <div className="text-[0.65rem] uppercase tracking-[0.2em] text-muted">
+                  {isToday ? 'Editing today' : 'Editing a past day'}
+                </div>
+                <label className="font-display text-lg text-ink cursor-pointer">
+                  {prettyDate(activeDate)}
+                  <input
+                    type="date"
+                    value={activeDateKey}
+                    max={dKey}
+                    onChange={e => { if (e.target.value && e.target.value <= dKey) setActiveDateKey(e.target.value) }}
+                    className="sr-only"
+                  />
+                </label>
+              </div>
+              <button
+                onClick={() => stepDay(1)}
+                disabled={isToday}
+                aria-label="Next day"
+                className={`w-9 h-9 rounded-full border flex items-center justify-center tap ${isToday ? 'border-line/60 bg-white/50 text-muted/50 cursor-not-allowed' : 'border-line bg-white text-ink hover:bg-sand'}`}
+              >
+                ›
+              </button>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="text-sm text-muted">
+                <span className="font-semibold text-ink">{activeDoneCount}</span> of{' '}
+                <span className="font-semibold text-ink">{totalDueToday}</span> done
+              </div>
+              {!isToday && (
+                <button
+                  onClick={goToToday}
+                  className="text-xs px-3 py-1.5 rounded-full bg-ink text-cream hover:translate-y-[-1px] transition tap"
+                >
+                  Jump to today
+                </button>
+              )}
+            </div>
           </div>
+          {!isToday && (
+            <p className="text-xs text-muted mt-2">
+              Checking a box here fills in a missed day. Stars are added to {prettyDate(activeDate)}.
+            </p>
+          )}
+        </div>
+
+        <div className="flex flex-wrap items-center justify-between gap-3 rounded-card border border-line bg-white/70 backdrop-blur-sm px-5 py-3 shadow-card">
           <div className="text-sm text-muted">
             Tracking mode:{' '}
             <span className="font-semibold text-ink">
@@ -583,13 +648,13 @@ export default function App() {
             child={child}
             tasks={state.tasks}
             categories={state.taskCategories}
-            dateKey={dKey}
-            starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
+            dateKey={activeDateKey}
+            starsToday={(state.starLog?.[activeDateKey]?.[child.id]) || 0}
             starsThisPeriod={starsByChild[child.id]}
             reset={state.settings.starResetMode}
             rewards={state.rewards}
             adminMode={true}
-            onToggleTask={toggleTask}
+            onToggleTask={(id) => toggleTask(id, activeDateKey)}
             onEditTask={openEditTask}
             onDeleteTask={deleteTask}
             onAddTask={(cat) => openAddTask(cat, child.id)}
