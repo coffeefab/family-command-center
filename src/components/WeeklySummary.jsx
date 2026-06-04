@@ -72,6 +72,7 @@ export default function WeeklySummary({
 
       {expanded && (
         <div className="p-5 space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
           {stats.map(({ child, weekStars, perDayStars, weekDone, earned, nextReward, redeemed }) => {
             const p = palette[child.color] || palette.coral
             const remaining = nextReward ? nextReward.cost - weekStars : 0
@@ -188,6 +189,7 @@ export default function WeeklySummary({
               </div>
             )
           })}
+          </div>
 
           <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-line">
             <p className="text-xs text-muted">

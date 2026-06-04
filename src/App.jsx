@@ -639,6 +639,18 @@ export default function App() {
 
       </div>
 
+      <div className="relative z-10 px-6 md:px-10 pb-6">
+        <WeeklySummary
+          children={state.children}
+          tasks={state.tasks}
+          starLog={state.starLog}
+          rewards={state.rewards}
+          redemptions={state.redemptions}
+          onToggleRedemption={toggleRedemption}
+          onResetWeek={resetThisWeek}
+        />
+      </div>
+
       <main
         className="relative z-10 px-6 md:px-10 pb-6 grid gap-4 grid-cols-1 md:grid-cols-3 items-start"
       >
@@ -704,15 +716,6 @@ export default function App() {
 
       {parentTab === 'history' && (
         <div className="relative z-10 px-6 md:px-10 pb-6 space-y-5">
-          <WeeklySummary
-            children={state.children}
-            tasks={state.tasks}
-            starLog={state.starLog}
-            rewards={state.rewards}
-            redemptions={state.redemptions}
-            onToggleRedemption={toggleRedemption}
-            onResetWeek={resetThisWeek}
-          />
           <WeeklyHistory
             children={state.children}
             starLog={state.starLog}
