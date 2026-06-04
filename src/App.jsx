@@ -8,7 +8,7 @@ import ChildCard from './components/ChildCard.jsx'
 import Reminders from './components/Reminders.jsx'
 import RewardsRail from './components/RewardsRail.jsx'
 import RewardsShop from './components/RewardsShop.jsx'
-import TaskEditor from './components/TaskEditor.jsx'
+import TaskEditor, { ALL_CHILDREN } from './components/TaskEditor.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
 import PinModal from './components/PinModal.jsx'
 import HomeLobby from './components/HomeLobby.jsx'
@@ -160,7 +160,16 @@ export default function App() {
 
   const saveTask = (form) => {
     update(s => {
-      if (form.id) {
+      if (form.childId === ALL_CHILDREN) {
+        // Assign to everyone: drop the task being edited (if any) and create
+        // an independent copy for each child so each earns and checks off their own.
+        if (form.id) s.tasks = s.tasks.filter(t => t.id !== form.id)
+        const base = Date.now()
+        s.children.forEach((c, i) => {
+          const { id, ...rest } = form
+          s.tasks.push({ ...rest, id: `t${base}_${i}`, childId: c.id, completedBy: {} })
+        })
+      } else if (form.id) {
         const idx = s.tasks.findIndex(t => t.id === form.id)
         if (idx >= 0) s.tasks[idx] = { ...s.tasks[idx], ...form }
       } else {
@@ -453,7 +462,7 @@ export default function App() {
         )}
 
         {/* Two columns: tasks + schedule on the left, rewards + reminders on the right */}
-        <div className="relative z-10 px-6 md:px-10 pt-6 pb-2 max-w-6xl mx-auto grid gap-5 grid-cols-1 lg:grid-cols-3 items-start">
+        <div className="relative z-10 px-6 md:px-10 pt-6 pb-10 max-w-6xl mx-auto grid gap-5 grid-cols-1 lg:grid-cols-3 items-start">
           {/* Left / main column: tasks, then calendar */}
           <main className="lg:col-span-2 space-y-5">
             <ChildCard
@@ -478,6 +487,23 @@ export default function App() {
               title={`${child.name}'s day`}
               emptyHint="No scheduled lessons or activities today."
             />
+
+            {/* I'm done button: spans the left column only */}
+            <div className="pt-1">
+              <button
+                onClick={handleDone}
+                className={`w-full tap rounded-card ${p.btn} font-display text-2xl md:text-3xl py-6 shadow-card flex items-center justify-center gap-3 transition active:translate-y-[1px]`}
+                style={{ minHeight: 84 }}
+              >
+                <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="5 12 10 17 19 7" />
+                </svg>
+                <span>{allDone ? "Yay, all done!" : "I'm done!"}</span>
+              </button>
+              <p className="text-xs text-muted text-center mt-2">
+                Your work is saved automatically. Tap this to celebrate and head home.
+              </p>
+            </div>
           </main>
 
           {/* Right column: rewards shop, then reminders */}
@@ -496,23 +522,6 @@ export default function App() {
             />
           </aside>
         </div>
-
-        {/* Big I'm done button */}
-        <section className="relative z-10 px-6 md:px-10 pt-4 pb-10 max-w-6xl mx-auto">
-          <button
-            onClick={handleDone}
-            className={`w-full tap rounded-card ${p.btn} font-display text-2xl md:text-3xl py-6 shadow-card flex items-center justify-center gap-3 transition active:translate-y-[1px]`}
-            style={{ minHeight: 84 }}
-          >
-            <svg viewBox="0 0 24 24" className="w-7 h-7" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-              <polyline points="5 12 10 17 19 7" />
-            </svg>
-            <span>{allDone ? "Yay, all done!" : "I'm done!"}</span>
-          </button>
-          <p className="text-xs text-muted text-center mt-2">
-            Your work is saved automatically. Tap this to celebrate and head home.
-          </p>
-        </section>
 
         {celebratingFor === child.id && (
           <CelebrationOverlay

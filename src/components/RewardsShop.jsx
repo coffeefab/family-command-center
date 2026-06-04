@@ -42,10 +42,10 @@ export default function RewardsShop({ child, rewards, stars, reset }) {
                     className={`relative rounded-2xl border ${p.border} ${p.soft} px-3 py-3 flex flex-col gap-1.5 shadow-card`}
                   >
                     <div className={`text-sm font-semibold ${p.text} leading-tight`}>{r.label}</div>
-                    <div className="flex items-center justify-between mt-auto">
+                    <div className="flex items-center justify-between gap-1.5 mt-auto">
                       <span className={`text-xs ${p.text}`}>★ {r.cost}</span>
-                      <span className={`text-[10px] uppercase tracking-wider font-semibold ${p.dot} text-white px-2 py-0.5 rounded-full`}>
-                        I can get this
+                      <span className={`text-[10px] uppercase tracking-wider font-semibold ${p.dot} text-white px-2 py-0.5 rounded-full whitespace-nowrap leading-none`}>
+                        Can get!
                       </span>
                     </div>
                   </div>
@@ -58,10 +58,10 @@ export default function RewardsShop({ child, rewards, stars, reset }) {
                   className="rounded-2xl border border-line bg-cream/60 px-3 py-3 flex flex-col gap-1.5"
                 >
                   <div className="text-sm font-semibold text-ink/70 leading-tight">{r.label}</div>
-                  <div className="flex items-center justify-between mt-auto">
+                  <div className="flex items-center justify-between gap-1.5 mt-auto">
                     <span className="text-xs text-muted">★ {r.cost}</span>
-                    <span className="text-[10px] uppercase tracking-wider text-muted">
-                      {gap} more to go
+                    <span className="text-[10px] uppercase tracking-wider text-muted whitespace-nowrap">
+                      {gap} more
                     </span>
                   </div>
                 </div>

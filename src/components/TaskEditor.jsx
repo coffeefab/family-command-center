@@ -10,6 +10,7 @@ const empty = {
 }
 
 const ADD_NEW = '__add_new__'
+export const ALL_CHILDREN = '__everyone__'
 
 export default function TaskEditor({ open, initial, children, categories, onAddCategory, onClose, onSave }) {
   const [form, setForm] = useState(empty)
@@ -87,6 +88,7 @@ export default function TaskEditor({ open, initial, children, categories, onAddC
                 onChange={e => set('childId', e.target.value)}
                 className="w-full rounded-xl border border-line bg-white px-3 py-2"
               >
+                <option value={ALL_CHILDREN}>Everyone</option>
                 {children.map(c => (
                   <option key={c.id} value={c.id}>{c.name}</option>
                 ))}
