@@ -7,6 +7,7 @@ import Header from './components/Header.jsx'
 import ChildCard from './components/ChildCard.jsx'
 import Reminders from './components/Reminders.jsx'
 import RewardsRail from './components/RewardsRail.jsx'
+import RewardsShop from './components/RewardsShop.jsx'
 import TaskEditor from './components/TaskEditor.jsx'
 import SettingsPanel from './components/SettingsPanel.jsx'
 import PinModal from './components/PinModal.jsx'
@@ -478,8 +479,18 @@ export default function App() {
           />
         </main>
 
+        {/* What I can get with my stars */}
+        <section className="relative z-10 px-6 md:px-10 pt-1 max-w-3xl mx-auto">
+          <RewardsShop
+            child={child}
+            rewards={state.rewards}
+            stars={starsByChild[child.id] || 0}
+            reset={state.settings.starResetMode}
+          />
+        </section>
+
         {/* Reminders */}
-        <section className="relative z-10 px-6 md:px-10 max-w-3xl mx-auto">
+        <section className="relative z-10 px-6 md:px-10 pt-5 max-w-3xl mx-auto">
           <Reminders
             reminders={state.reminders}
             adminMode={false}
