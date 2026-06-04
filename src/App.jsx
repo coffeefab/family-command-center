@@ -19,6 +19,7 @@ import TodaySchedule from './components/TodaySchedule.jsx'
 import CalendarPanel from './components/CalendarPanel.jsx'
 import EventEditor from './components/EventEditor.jsx'
 import FamilyCalendar from './components/FamilyCalendar.jsx'
+import MonthCalendar from './components/MonthCalendar.jsx'
 import SyncSetup from './components/SyncSetup.jsx'
 import { useFamilySync } from './state/useFamilySync.js'
 import { getStoredFamilyCode, setStoredFamilyCode, clearStoredFamilyCode } from './lib/supabase.js'
@@ -684,7 +685,14 @@ export default function App() {
       )}
 
       {parentTab === 'calendar' && (
-        <div className="relative z-10 px-6 md:px-10 pb-6">
+        <div className="relative z-10 px-6 md:px-10 pb-6 space-y-6">
+          <MonthCalendar
+            events={state.events}
+            children={state.children}
+            adminMode={true}
+            onAdd={openNewEvent}
+            onEdit={openEditEvent}
+          />
           <CalendarPanel
             events={state.events}
             children={state.children}
