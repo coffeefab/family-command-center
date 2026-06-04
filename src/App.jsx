@@ -452,58 +452,53 @@ export default function App() {
           </div>
         )}
 
-        {/* Today's schedule for this kid */}
-        <section className="relative z-10 px-6 md:px-10 pt-6 max-w-3xl mx-auto">
-          <TodaySchedule
-            events={state.events}
-            children={state.children}
-            childId={child.id}
-            title={`${child.name}'s day`}
-            emptyHint="No scheduled lessons or activities today."
-          />
-        </section>
+        {/* Two columns: tasks + schedule on the left, rewards + reminders on the right */}
+        <div className="relative z-10 px-6 md:px-10 pt-6 pb-2 max-w-6xl mx-auto grid gap-5 grid-cols-1 lg:grid-cols-3 items-start">
+          {/* Left / main column: tasks, then calendar */}
+          <main className="lg:col-span-2 space-y-5">
+            <ChildCard
+              child={child}
+              tasks={state.tasks}
+              categories={state.taskCategories}
+              dateKey={dKey}
+              starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
+              starsThisPeriod={starsByChild[child.id]}
+              reset={state.settings.starResetMode}
+              rewards={state.rewards}
+              adminMode={false}
+              onToggleTask={toggleTask}
+              onEditTask={() => {}}
+              onDeleteTask={() => {}}
+              onAddTask={() => {}}
+            />
+            <TodaySchedule
+              events={state.events}
+              children={state.children}
+              childId={child.id}
+              title={`${child.name}'s day`}
+              emptyHint="No scheduled lessons or activities today."
+            />
+          </main>
 
-        {/* Focused kid card */}
-        <main className="relative z-10 px-6 md:px-10 pt-5 pb-4 max-w-3xl mx-auto">
-          <ChildCard
-            child={child}
-            tasks={state.tasks}
-            categories={state.taskCategories}
-            dateKey={dKey}
-            starsToday={(state.starLog?.[dKey]?.[child.id]) || 0}
-            starsThisPeriod={starsByChild[child.id]}
-            reset={state.settings.starResetMode}
-            rewards={state.rewards}
-            adminMode={false}
-            onToggleTask={toggleTask}
-            onEditTask={() => {}}
-            onDeleteTask={() => {}}
-            onAddTask={() => {}}
-          />
-        </main>
-
-        {/* What I can get with my stars */}
-        <section className="relative z-10 px-6 md:px-10 pt-1 max-w-3xl mx-auto">
-          <RewardsShop
-            child={child}
-            rewards={state.rewards}
-            stars={starsByChild[child.id] || 0}
-            reset={state.settings.starResetMode}
-          />
-        </section>
-
-        {/* Reminders */}
-        <section className="relative z-10 px-6 md:px-10 pt-5 max-w-3xl mx-auto">
-          <Reminders
-            reminders={state.reminders}
-            adminMode={false}
-            onAdd={() => {}}
-            onDelete={() => {}}
-          />
-        </section>
+          {/* Right column: rewards shop, then reminders */}
+          <aside className="space-y-5">
+            <RewardsShop
+              child={child}
+              rewards={state.rewards}
+              stars={starsByChild[child.id] || 0}
+              reset={state.settings.starResetMode}
+            />
+            <Reminders
+              reminders={state.reminders}
+              adminMode={false}
+              onAdd={() => {}}
+              onDelete={() => {}}
+            />
+          </aside>
+        </div>
 
         {/* Big I'm done button */}
-        <section className="relative z-10 px-6 md:px-10 pt-6 pb-10 max-w-3xl mx-auto">
+        <section className="relative z-10 px-6 md:px-10 pt-4 pb-10 max-w-6xl mx-auto">
           <button
             onClick={handleDone}
             className={`w-full tap rounded-card ${p.btn} font-display text-2xl md:text-3xl py-6 shadow-card flex items-center justify-center gap-3 transition active:translate-y-[1px]`}
